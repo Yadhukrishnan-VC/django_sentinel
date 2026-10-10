@@ -1,0 +1,117 @@
+name: DjangoSentinel CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Install DjangoSentinel
+      run: pip install -e .
+
+    - name: Run Security Scan (SARIF output)
+      run: |
+        sentinel scan . \
+          --format sarif \
+          --skip-deps \
+          -o results.sarif
+      continue-on-error: true
+
+    - name: Upload SARIF to GitHub Code Scanning
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: results.sarif
+        category: django-sentinel
+
+    - name: Run Security Scan (Terminal — fail on critical)
+      run: |
+        sentinel scan . \
+          --fail-on critical \
+          --no-color
+
+    - name: Generate HTML Report
+      run: |
+        sentinel scan . \
+          --format html \
+          -o security-report.html \
+          --no-color
+      continue-on-error: true
+
+    - name: Upload HTML Report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: security-report
+        path: security-report.html
+        retention-days: 30
+
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: |
+        pip install -e ".[dev]"
+
+    - name: Run tests
+      run: python tests/test_all.py
+
+  dependency-check:
+    name: Dependency Vulnerability Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install DjangoSentinel
+      run: pip install -e .
+
+    - name: Scan Dependencies Only
+      run: |
+        sentinel scan . \
+          --skip-logic \
+          --format json \
+          -o dependency-report.json
+
+    - name: Upload Dependency Report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: dependency-report
+        path: dependency-report.json

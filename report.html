@@ -1,0 +1,3064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DjangoSentinel Security Report</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          background: #0d1117; color: #e6edf3; line-height: 1.6; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+  header { text-align: center; padding: 3rem 0 2rem; border-bottom: 1px solid #30363d; }
+  header h1 { font-size: 2rem; color: #58a6ff; }
+  header p { color: #8b949e; margin-top: 0.5rem; }
+  .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+              gap: 1rem; margin: 2rem 0; }
+  .stat { background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+           padding: 1.2rem; text-align: center; }
+  .stat-value { font-size: 2rem; font-weight: bold; }
+  .stat-label { color: #8b949e; font-size: 0.85rem; margin-top: 0.3rem; }
+  .critical { color: #f85149; border-color: #f85149; }
+  .high { color: #e3b341; border-color: #e3b341; }
+  .medium { color: #d29922; border-color: #d29922; }
+  .low { color: #58a6ff; border-color: #58a6ff; }
+  .vuln { background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+           margin: 1rem 0; overflow: hidden; }
+  .vuln-header { display: flex; align-items: center; gap: 0.75rem; padding: 1rem 1.25rem;
+                  cursor: pointer; }
+  .badge { padding: 0.25rem 0.6rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+  .badge-CRITICAL { background: rgba(248,81,73,0.2); color: #f85149; }
+  .badge-HIGH { background: rgba(227,179,65,0.2); color: #e3b341; }
+  .badge-MEDIUM { background: rgba(210,153,34,0.2); color: #d29922; }
+  .badge-LOW { background: rgba(88,166,255,0.2); color: #58a6ff; }
+  .vuln-title { font-weight: 600; flex: 1; }
+  .vuln-body { padding: 1.25rem; border-top: 1px solid #30363d; }
+  .location { font-family: 'SFMono-Regular', monospace; font-size: 0.85rem;
+               color: #8b949e; background: #0d1117; padding: 0.3rem 0.6rem;
+               border-radius: 4px; display: inline-block; margin: 0.5rem 0; }
+  .fix-block { background: rgba(40,167,69,0.1); border: 1px solid rgba(40,167,69,0.3);
+                border-radius: 6px; padding: 1rem; margin-top: 1rem; }
+  .fix-block h4 { color: #3fb950; margin-bottom: 0.5rem; }
+  pre { background: #0d1117; padding: 0.8rem; border-radius: 4px; overflow-x: auto;
+         font-size: 0.8rem; border: 1px solid #30363d; }
+  .meta { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.5rem; }
+  .meta span { font-size: 0.8rem; color: #8b949e; background: #0d1117;
+                padding: 0.2rem 0.5rem; border-radius: 4px; }
+  footer { text-align: center; color: #8b949e; padding: 2rem 0; border-top: 1px solid #30363d; margin-top: 2rem; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>🛡️ DjangoSentinel Security Report</h1>
+    <p>Generated: 2026-05-03 19:41:27 &nbsp;|&nbsp; Scan ID: aeaa6052-d24</p>
+    <p>Project: <code>/home/yk/Documents/vulnshop_complete/vulnshop</code></p>
+  </header>
+
+  <div class="summary">
+    <div class="stat"><div class="stat-value">29</div><div class="stat-label">Files Scanned</div></div>
+    <div class="stat critical"><div class="stat-value">17</div><div class="stat-label">Critical</div></div>
+    <div class="stat high"><div class="stat-value">39</div><div class="stat-label">High</div></div>
+    <div class="stat medium"><div class="stat-value">38</div><div class="stat-label">Medium</div></div>
+    <div class="stat low"><div class="stat-value">1</div><div class="stat-label">Low</div></div>
+    <div class="stat"><div class="stat-value">94</div><div class="stat-label">Auto-Fixable</div></div>
+  </div>
+
+  <h2 style="margin-bottom:1rem">Vulnerabilities</h2>
+  
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-CRITICAL">CRITICAL</span>
+                <span class="vuln-title">SQL Injection via String Formatting</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:64</div>
+                <p style="margin:0.75rem 0">SQL query constructed using string formatting allows attackers to inject arbitrary SQL. Use Django ORM or parameterized queries instead.</p>
+                <pre>f&quot;SELECT id, password FROM auth_user WHERE username=&#x27;{username}&#x27;&quot;</pre>
+                <div class="meta">
+                  <span>ID: 755eb1d8</span>
+                  <span>CWE-89</span>
+                  <span>A03:2021 – Injection</span>
+                  <span>SQL/Command Injection</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Use parameterized queries </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Never interpolate user input directly into SQL strings.</p>
+                  <pre># Use Django ORM: Model.objects.filter(field=value)
+# Or parameterized: cursor.execute(&#x27;SELECT ... WHERE id=%s&#x27;, [user_id])</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-CRITICAL">CRITICAL</span>
+                <span class="vuln-title">SQL Injection via String Formatting</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:221</div>
+                <p style="margin:0.75rem 0">SQL query constructed using string formatting allows attackers to inject arbitrary SQL. Use Django ORM or parameterized queries instead.</p>
+                <pre>f&quot;SELECT * FROM app_product WHERE name ILIKE &#x27;%{related_tag}%&#x27; LIMIT 4&quot;</pre>
+                <div class="meta">
+                  <span>ID: 39047cfb</span>
+                  <span>CWE-89</span>
+                  <span>A03:2021 – Injection</span>
+                  <span>SQL/Command Injection</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Use parameterized queries </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Never interpolate user input directly into SQL strings.</p>
+                  <pre># Use Django ORM: Model.objects.filter(field=value)
+# Or parameterized: cursor.execute(&#x27;SELECT ... WHERE id=%s&#x27;, [user_id])</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-CRITICAL">CRITICAL</span>
+                <span class="vuln-title">Server-Side Template Injection (SSTI)</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:639</div>
+                <p style="margin:0.75rem 0">Constructing Django templates from user-controlled strings enables Server-Side Template Injection (SSTI), allowing attackers to execute arbitrary Python code on the server.</p>
+                <pre>t = Template(f&#x27;&lt;h1&gt;Hello {name}!&lt;/h1&gt;&lt;p&gt;Welcome to VulnShop.&lt;/p&gt;&#x27;)</pre>
+                <div class="meta">
+                  <span>ID: fe7ad206</span>
+                  <span>CWE-94</span>
+                  <span>A03:2021 – Injection</span>
+                  <span>SQL/Command Injection</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Use static template with context variables </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Templates must be static files; user data goes in context only.</p>
+                  <pre># NEVER construct templates from user input
+# Use static template file with context:
+return render(request, &#x27;myapp/template.html&#x27;, context)</pre>
+                  
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-CRITICAL">CRITICAL</span>
+                <span class="vuln-title">Unsafe Deserialization via pickle</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:619</div>
+                <p style="margin:0.75rem 0">pickle.loads() can execute arbitrary code when deserializing untrusted data.</p>
+                <pre>prefs = pickle.loads(base64.b64decode(data))</pre>
+                <div class="meta">
+                  <span>ID: 9c524902</span>
+                  <span>CWE-502</span>
+                  <span>A03:2021 – Injection</span>
+                  <span>SQL/Command Injection</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Remove dangerous function: Unsafe Deserialization via pickle </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">pickle.loads() can execute arbitrary code when deserializing untrusted data.</p>
+                  <pre># See description for safe alternatives</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-CRITICAL">CRITICAL</span>
+                <span class="vuln-title">DEBUG=True in Production Settings</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 vulnshop/settings.py:17</div>
+                <p style="margin:0.75rem 0">Django DEBUG mode exposes stack traces, SQL queries, local variables, and settings to any user who triggers an error. This is a critical information disclosure vulnerability in production environments.</p>
+                <pre>Debug=True</pre>
+                <div class="meta">
+                  <span>ID: bae7382a</span>
+                  <span>CWE-94</span>
+                  <span>A05:2021 – Security Misconfiguration</span>
+                  <span>Security Misconfiguration</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Replace insecure setting </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Change DEBUG = True to DEBUG = False</p>
+                  <pre>DEBUG = False</pre>
+                  
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-CRITICAL">CRITICAL</span>
+                <span class="vuln-title">DEBUG=True in Production Settings</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 vulnshop/settings.py:20</div>
+                <p style="margin:0.75rem 0">Django DEBUG mode exposes stack traces, SQL queries, local variables, and settings to any user who triggers an error. This is a critical information disclosure vulnerability in production environments.</p>
+                <pre>DEBUG = True</pre>
+                <div class="meta">
+                  <span>ID: cce16cf1</span>
+                  <span>CWE-94</span>
+                  <span>A05:2021 – Security Misconfiguration</span>
+                  <span>Security Misconfiguration</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Replace insecure setting </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Change DEBUG = True to DEBUG = False</p>
+                  <pre>DEBUG = False</pre>
+                  
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-CRITICAL">CRITICAL</span>
+                <span class="vuln-title">Hardcoded Secret Key in Source Code</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 vulnshop/settings.py:14</div>
+                <p style="margin:0.75rem 0">A hardcoded secret key is hardcoded in source code. This credential will be exposed to anyone with repository access and will persist in git history even after removal.</p>
+                
+                <div class="meta">
+                  <span>ID: 393079a5</span>
+                  <span>CWE-798</span>
+                  <span>A02:2021 – Cryptographic Failures</span>
+                  <span>Hardcoded Secret/Credential</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Move secret to environment variable </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use environment variables or a secrets manager.</p>
+                  <pre>import os
+from decouple import config  # pip install python-decouple
+
+# In .env file (add to .gitignore):
+# MY_SECRET=your-actual-secret
+
+SECRET = config(&#x27;MY_SECRET&#x27;)
+# Or: SECRET = os.environ.get(&#x27;MY_SECRET&#x27;)</pre>
+                  
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-CRITICAL">CRITICAL</span>
+                <span class="vuln-title">Hardcoded Secret Key in Source Code</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 vulnshop/settings.py:168</div>
+                <p style="margin:0.75rem 0">A hardcoded secret key is hardcoded in source code. This credential will be exposed to anyone with repository access and will persist in git history even after removal.</p>
+                
+                <div class="meta">
+                  <span>ID: 020ad0be</span>
+                  <span>CWE-798</span>
+                  <span>A02:2021 – Cryptographic Failures</span>
+                  <span>Hardcoded Secret/Credential</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Move secret to environment variable </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use environment variables or a secrets manager.</p>
+                  <pre>import os
+from decouple import config  # pip install python-decouple
+
+# In .env file (add to .gitignore):
+# MY_SECRET=your-actual-secret
+
+SECRET = config(&#x27;MY_SECRET&#x27;)
+# Or: SECRET = os.environ.get(&#x27;MY_SECRET&#x27;)</pre>
+                  
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-CRITICAL">CRITICAL</span>
+                <span class="vuln-title">Hardcoded Password in Source Code</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 vulnshop/settings.py:179</div>
+                <p style="margin:0.75rem 0">A hardcoded password is hardcoded in source code. This credential will be exposed to anyone with repository access and will persist in git history even after removal.</p>
+                
+                <div class="meta">
+                  <span>ID: c30ab264</span>
+                  <span>CWE-798</span>
+                  <span>A02:2021 – Cryptographic Failures</span>
+                  <span>Hardcoded Secret/Credential</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Move secret to environment variable </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use environment variables or a secrets manager.</p>
+                  <pre>import os
+from decouple import config  # pip install python-decouple
+
+# In .env file (add to .gitignore):
+# MY_SECRET=your-actual-secret
+
+SECRET = config(&#x27;MY_SECRET&#x27;)
+# Or: SECRET = os.environ.get(&#x27;MY_SECRET&#x27;)</pre>
+                  
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-CRITICAL">CRITICAL</span>
+                <span class="vuln-title">SQL Injection via String Formatting</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 scanner/app.py:344</div>
+                <p style="margin:0.75rem 0">SQL query constructed using string formatting allows attackers to inject arbitrary SQL. Use Django ORM or parameterized queries instead.</p>
+                <pre>scan_status.update({&#x27;running&#x27;: True, &#x27;done&#x27;: False,</pre>
+                <div class="meta">
+                  <span>ID: 91521443</span>
+                  <span>CWE-89</span>
+                  <span>A03:2021 – Injection</span>
+                  <span>SQL/Command Injection</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Use parameterized queries </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Never interpolate user input directly into SQL strings.</p>
+                  <pre># Use Django ORM: Model.objects.filter(field=value)
+# Or parameterized: cursor.execute(&#x27;SELECT ... WHERE id=%s&#x27;, [user_id])</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-CRITICAL">CRITICAL</span>
+                <span class="vuln-title">SQL Injection via String Formatting</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 scanner/app.py:357</div>
+                <p style="margin:0.75rem 0">SQL query constructed using string formatting allows attackers to inject arbitrary SQL. Use Django ORM or parameterized queries instead.</p>
+                <pre>scan_status.update({&#x27;running&#x27;: False, &#x27;done&#x27;: True,</pre>
+                <div class="meta">
+                  <span>ID: c89540e5</span>
+                  <span>CWE-89</span>
+                  <span>A03:2021 – Injection</span>
+                  <span>SQL/Command Injection</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Use parameterized queries </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Never interpolate user input directly into SQL strings.</p>
+                  <pre># Use Django ORM: Model.objects.filter(field=value)
+# Or parameterized: cursor.execute(&#x27;SELECT ... WHERE id=%s&#x27;, [user_id])</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-CRITICAL">CRITICAL</span>
+                <span class="vuln-title">SQL Injection via String Formatting</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 scanner/scanner.py:132</div>
+                <p style="margin:0.75rem 0">SQL query constructed using string formatting allows attackers to inject arbitrary SQL. Use Django ORM or parameterized queries instead.</p>
+                <pre>cursor.execute(f&quot;SELECT * FROM app_product WHERE name=&#x27;{user_input}&#x27;&quot;)</pre>
+                <div class="meta">
+                  <span>ID: 9150ee3f</span>
+                  <span>CWE-89</span>
+                  <span>A03:2021 – Injection</span>
+                  <span>SQL/Command Injection</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Use parameterized queries </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Never interpolate user input directly into SQL strings.</p>
+                  <pre># Use Django ORM: Model.objects.filter(field=value)
+# Or parameterized: cursor.execute(&#x27;SELECT ... WHERE id=%s&#x27;, [user_id])</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-CRITICAL">CRITICAL</span>
+                <span class="vuln-title">SQL Injection via String Formatting</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 scanner/scanner.py:135</div>
+                <p style="margin:0.75rem 0">SQL query constructed using string formatting allows attackers to inject arbitrary SQL. Use Django ORM or parameterized queries instead.</p>
+                <pre>cursor.execute(&quot;SELECT * FROM app_product WHERE name=%s&quot;, [user_input])</pre>
+                <div class="meta">
+                  <span>ID: 3ecb4441</span>
+                  <span>CWE-89</span>
+                  <span>A03:2021 – Injection</span>
+                  <span>SQL/Command Injection</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Use parameterized queries </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Never interpolate user input directly into SQL strings.</p>
+                  <pre># Use Django ORM: Model.objects.filter(field=value)
+# Or parameterized: cursor.execute(&#x27;SELECT ... WHERE id=%s&#x27;, [user_id])</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-CRITICAL">CRITICAL</span>
+                <span class="vuln-title">Command Injection via shell=True in subprocess</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 scanner/scanner.py:177</div>
+                <p style="margin:0.75rem 0">subprocess with shell=True passes commands through the shell, allowing command injection if any part of the command includes user-controlled input.</p>
+                <pre>subprocess.run(f&#x27;ping -c 1 {host}&#x27;, shell=True)</pre>
+                <div class="meta">
+                  <span>ID: d902d884</span>
+                  <span>CWE-78</span>
+                  <span>A03:2021 – Injection</span>
+                  <span>SQL/Command Injection</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Use shell=False with argument list </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Pass arguments as a list to avoid shell interpretation.</p>
+                  <pre>shell=False  # Pass args as list: subprocess.run([&#x27;cmd&#x27;, arg1, arg2])</pre>
+                  
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-CRITICAL">CRITICAL</span>
+                <span class="vuln-title">Server-Side Template Injection (SSTI)</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 scanner/scanner.py:299</div>
+                <p style="margin:0.75rem 0">Constructing Django templates from user-controlled strings enables Server-Side Template Injection (SSTI), allowing attackers to execute arbitrary Python code on the server.</p>
+                <pre>t = Template(f&quot;Hello {user_input}!&quot;)</pre>
+                <div class="meta">
+                  <span>ID: c2818085</span>
+                  <span>CWE-94</span>
+                  <span>A03:2021 – Injection</span>
+                  <span>SQL/Command Injection</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Use static template with context variables </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Templates must be static files; user data goes in context only.</p>
+                  <pre># NEVER construct templates from user input
+# Use static template file with context:
+return render(request, &#x27;myapp/template.html&#x27;, context)</pre>
+                  
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-CRITICAL">CRITICAL</span>
+                <span class="vuln-title">Unsafe Deserialization via pickle</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 scanner/scanner.py:1038</div>
+                <p style="margin:0.75rem 0">pickle.loads() can execute arbitrary code when deserializing untrusted data.</p>
+                <pre>prefs = pickle.loads(base64.b64decode(user_data))</pre>
+                <div class="meta">
+                  <span>ID: 05f5b60e</span>
+                  <span>CWE-502</span>
+                  <span>A03:2021 – Injection</span>
+                  <span>SQL/Command Injection</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Remove dangerous function: Unsafe Deserialization via pickle </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">pickle.loads() can execute arbitrary code when deserializing untrusted data.</p>
+                  <pre># See description for safe alternatives</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-CRITICAL">CRITICAL</span>
+                <span class="vuln-title">Hardcoded Password in Source Code</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/management/commands/seed_data.py:28</div>
+                <p style="margin:0.75rem 0">A hardcoded password is hardcoded in source code. This credential will be exposed to anyone with repository access and will persist in git history even after removal.</p>
+                
+                <div class="meta">
+                  <span>ID: 57c17f0b</span>
+                  <span>CWE-798</span>
+                  <span>A02:2021 – Cryptographic Failures</span>
+                  <span>Hardcoded Secret/Credential</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Move secret to environment variable </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use environment variables or a secrets manager.</p>
+                  <pre>import os
+from decouple import config  # pip install python-decouple
+
+# In .env file (add to .gitignore):
+# MY_SECRET=your-actual-secret
+
+SECRET = config(&#x27;MY_SECRET&#x27;)
+# Or: SECRET = os.environ.get(&#x27;MY_SECRET&#x27;)</pre>
+                  
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">CSRF Protection Explicitly Disabled on View</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:36</div>
+                <p style="margin:0.75rem 0">@csrf_exempt disables CSRF protection for this view. Unless this is a verified webhook endpoint with alternative authentication, this is a CSRF vulnerability.</p>
+                <pre>@csrf_exempt   # VULN-004: CSRF disabled on login endpoint</pre>
+                <div class="meta">
+                  <span>ID: 5848db5c</span>
+                  <span>CWE-352</span>
+                  <span>A01:2021 – Broken Access Control</span>
+                  <span>Cross-Site Request Forgery</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Remove @csrf_exempt or add webhook signature verification </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Only use @csrf_exempt with verified signature-based auth.</p>
+                  <pre># Option 1: Remove @csrf_exempt (preferred)
+# Option 2: Add webhook signature verification:
+# import hmac, hashlib
+# sig = request.headers.get(&#x27;X-Signature&#x27;)
+# if not hmac.compare_digest(sig, compute_sig(request.body)):
+#     return HttpResponse(status=403)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">CSRF Protection Explicitly Disabled on View</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:50</div>
+                <p style="margin:0.75rem 0">@csrf_exempt disables CSRF protection for this view. Unless this is a verified webhook endpoint with alternative authentication, this is a CSRF vulnerability.</p>
+                <pre>L03: Remove @csrf_exempt; ensure CSRF middleware is enabled</pre>
+                <div class="meta">
+                  <span>ID: e77a0f27</span>
+                  <span>CWE-352</span>
+                  <span>A01:2021 – Broken Access Control</span>
+                  <span>Cross-Site Request Forgery</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Remove @csrf_exempt or add webhook signature verification </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Only use @csrf_exempt with verified signature-based auth.</p>
+                  <pre># Option 1: Remove @csrf_exempt (preferred)
+# Option 2: Add webhook signature verification:
+# import hmac, hashlib
+# sig = request.headers.get(&#x27;X-Signature&#x27;)
+# if not hmac.compare_digest(sig, compute_sig(request.body)):
+#     return HttpResponse(status=403)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">CSRF Protection Explicitly Disabled on View</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:85</div>
+                <p style="margin:0.75rem 0">@csrf_exempt disables CSRF protection for this view. Unless this is a verified webhook endpoint with alternative authentication, this is a CSRF vulnerability.</p>
+                <pre>@csrf_exempt</pre>
+                <div class="meta">
+                  <span>ID: 30b275ce</span>
+                  <span>CWE-352</span>
+                  <span>A01:2021 – Broken Access Control</span>
+                  <span>Cross-Site Request Forgery</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Remove @csrf_exempt or add webhook signature verification </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Only use @csrf_exempt with verified signature-based auth.</p>
+                  <pre># Option 1: Remove @csrf_exempt (preferred)
+# Option 2: Add webhook signature verification:
+# import hmac, hashlib
+# sig = request.headers.get(&#x27;X-Signature&#x27;)
+# if not hmac.compare_digest(sig, compute_sig(request.body)):
+#     return HttpResponse(status=403)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">CSRF Protection Explicitly Disabled on View</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:115</div>
+                <p style="margin:0.75rem 0">@csrf_exempt disables CSRF protection for this view. Unless this is a verified webhook endpoint with alternative authentication, this is a CSRF vulnerability.</p>
+                <pre>@csrf_exempt</pre>
+                <div class="meta">
+                  <span>ID: 1a98c22a</span>
+                  <span>CWE-352</span>
+                  <span>A01:2021 – Broken Access Control</span>
+                  <span>Cross-Site Request Forgery</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Remove @csrf_exempt or add webhook signature verification </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Only use @csrf_exempt with verified signature-based auth.</p>
+                  <pre># Option 1: Remove @csrf_exempt (preferred)
+# Option 2: Add webhook signature verification:
+# import hmac, hashlib
+# sig = request.headers.get(&#x27;X-Signature&#x27;)
+# if not hmac.compare_digest(sig, compute_sig(request.body)):
+#     return HttpResponse(status=403)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">CSRF Protection Explicitly Disabled on View</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:233</div>
+                <p style="margin:0.75rem 0">@csrf_exempt disables CSRF protection for this view. Unless this is a verified webhook endpoint with alternative authentication, this is a CSRF vulnerability.</p>
+                <pre>@csrf_exempt</pre>
+                <div class="meta">
+                  <span>ID: 7ebd4b3e</span>
+                  <span>CWE-352</span>
+                  <span>A01:2021 – Broken Access Control</span>
+                  <span>Cross-Site Request Forgery</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Remove @csrf_exempt or add webhook signature verification </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Only use @csrf_exempt with verified signature-based auth.</p>
+                  <pre># Option 1: Remove @csrf_exempt (preferred)
+# Option 2: Add webhook signature verification:
+# import hmac, hashlib
+# sig = request.headers.get(&#x27;X-Signature&#x27;)
+# if not hmac.compare_digest(sig, compute_sig(request.body)):
+#     return HttpResponse(status=403)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">CSRF Protection Explicitly Disabled on View</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:268</div>
+                <p style="margin:0.75rem 0">@csrf_exempt disables CSRF protection for this view. Unless this is a verified webhook endpoint with alternative authentication, this is a CSRF vulnerability.</p>
+                <pre>@csrf_exempt</pre>
+                <div class="meta">
+                  <span>ID: d6d6d508</span>
+                  <span>CWE-352</span>
+                  <span>A01:2021 – Broken Access Control</span>
+                  <span>Cross-Site Request Forgery</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Remove @csrf_exempt or add webhook signature verification </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Only use @csrf_exempt with verified signature-based auth.</p>
+                  <pre># Option 1: Remove @csrf_exempt (preferred)
+# Option 2: Add webhook signature verification:
+# import hmac, hashlib
+# sig = request.headers.get(&#x27;X-Signature&#x27;)
+# if not hmac.compare_digest(sig, compute_sig(request.body)):
+#     return HttpResponse(status=403)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">CSRF Protection Explicitly Disabled on View</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:360</div>
+                <p style="margin:0.75rem 0">@csrf_exempt disables CSRF protection for this view. Unless this is a verified webhook endpoint with alternative authentication, this is a CSRF vulnerability.</p>
+                <pre>@csrf_exempt</pre>
+                <div class="meta">
+                  <span>ID: 9ab6fbf2</span>
+                  <span>CWE-352</span>
+                  <span>A01:2021 – Broken Access Control</span>
+                  <span>Cross-Site Request Forgery</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Remove @csrf_exempt or add webhook signature verification </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Only use @csrf_exempt with verified signature-based auth.</p>
+                  <pre># Option 1: Remove @csrf_exempt (preferred)
+# Option 2: Add webhook signature verification:
+# import hmac, hashlib
+# sig = request.headers.get(&#x27;X-Signature&#x27;)
+# if not hmac.compare_digest(sig, compute_sig(request.body)):
+#     return HttpResponse(status=403)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">CSRF Protection Explicitly Disabled on View</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:389</div>
+                <p style="margin:0.75rem 0">@csrf_exempt disables CSRF protection for this view. Unless this is a verified webhook endpoint with alternative authentication, this is a CSRF vulnerability.</p>
+                <pre>@csrf_exempt</pre>
+                <div class="meta">
+                  <span>ID: a3477b2b</span>
+                  <span>CWE-352</span>
+                  <span>A01:2021 – Broken Access Control</span>
+                  <span>Cross-Site Request Forgery</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Remove @csrf_exempt or add webhook signature verification </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Only use @csrf_exempt with verified signature-based auth.</p>
+                  <pre># Option 1: Remove @csrf_exempt (preferred)
+# Option 2: Add webhook signature verification:
+# import hmac, hashlib
+# sig = request.headers.get(&#x27;X-Signature&#x27;)
+# if not hmac.compare_digest(sig, compute_sig(request.body)):
+#     return HttpResponse(status=403)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">CSRF Protection Explicitly Disabled on View</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:473</div>
+                <p style="margin:0.75rem 0">@csrf_exempt disables CSRF protection for this view. Unless this is a verified webhook endpoint with alternative authentication, this is a CSRF vulnerability.</p>
+                <pre>@csrf_exempt</pre>
+                <div class="meta">
+                  <span>ID: f9bb6ded</span>
+                  <span>CWE-352</span>
+                  <span>A01:2021 – Broken Access Control</span>
+                  <span>Cross-Site Request Forgery</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Remove @csrf_exempt or add webhook signature verification </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Only use @csrf_exempt with verified signature-based auth.</p>
+                  <pre># Option 1: Remove @csrf_exempt (preferred)
+# Option 2: Add webhook signature verification:
+# import hmac, hashlib
+# sig = request.headers.get(&#x27;X-Signature&#x27;)
+# if not hmac.compare_digest(sig, compute_sig(request.body)):
+#     return HttpResponse(status=403)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">CSRF Protection Explicitly Disabled on View</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:552</div>
+                <p style="margin:0.75rem 0">@csrf_exempt disables CSRF protection for this view. Unless this is a verified webhook endpoint with alternative authentication, this is a CSRF vulnerability.</p>
+                <pre>@csrf_exempt</pre>
+                <div class="meta">
+                  <span>ID: 17349439</span>
+                  <span>CWE-352</span>
+                  <span>A01:2021 – Broken Access Control</span>
+                  <span>Cross-Site Request Forgery</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Remove @csrf_exempt or add webhook signature verification </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Only use @csrf_exempt with verified signature-based auth.</p>
+                  <pre># Option 1: Remove @csrf_exempt (preferred)
+# Option 2: Add webhook signature verification:
+# import hmac, hashlib
+# sig = request.headers.get(&#x27;X-Signature&#x27;)
+# if not hmac.compare_digest(sig, compute_sig(request.body)):
+#     return HttpResponse(status=403)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">CSRF Protection Explicitly Disabled on View</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:580</div>
+                <p style="margin:0.75rem 0">@csrf_exempt disables CSRF protection for this view. Unless this is a verified webhook endpoint with alternative authentication, this is a CSRF vulnerability.</p>
+                <pre>@csrf_exempt</pre>
+                <div class="meta">
+                  <span>ID: 6a5c4334</span>
+                  <span>CWE-352</span>
+                  <span>A01:2021 – Broken Access Control</span>
+                  <span>Cross-Site Request Forgery</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Remove @csrf_exempt or add webhook signature verification </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Only use @csrf_exempt with verified signature-based auth.</p>
+                  <pre># Option 1: Remove @csrf_exempt (preferred)
+# Option 2: Add webhook signature verification:
+# import hmac, hashlib
+# sig = request.headers.get(&#x27;X-Signature&#x27;)
+# if not hmac.compare_digest(sig, compute_sig(request.body)):
+#     return HttpResponse(status=403)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">CSRF Protection Explicitly Disabled on View</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:599</div>
+                <p style="margin:0.75rem 0">@csrf_exempt disables CSRF protection for this view. Unless this is a verified webhook endpoint with alternative authentication, this is a CSRF vulnerability.</p>
+                <pre>@csrf_exempt</pre>
+                <div class="meta">
+                  <span>ID: dda2253f</span>
+                  <span>CWE-352</span>
+                  <span>A01:2021 – Broken Access Control</span>
+                  <span>Cross-Site Request Forgery</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Remove @csrf_exempt or add webhook signature verification </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Only use @csrf_exempt with verified signature-based auth.</p>
+                  <pre># Option 1: Remove @csrf_exempt (preferred)
+# Option 2: Add webhook signature verification:
+# import hmac, hashlib
+# sig = request.headers.get(&#x27;X-Signature&#x27;)
+# if not hmac.compare_digest(sig, compute_sig(request.body)):
+#     return HttpResponse(status=403)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">CSRF Protection Explicitly Disabled on View</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:626</div>
+                <p style="margin:0.75rem 0">@csrf_exempt disables CSRF protection for this view. Unless this is a verified webhook endpoint with alternative authentication, this is a CSRF vulnerability.</p>
+                <pre>@csrf_exempt</pre>
+                <div class="meta">
+                  <span>ID: 41c5762b</span>
+                  <span>CWE-352</span>
+                  <span>A01:2021 – Broken Access Control</span>
+                  <span>Cross-Site Request Forgery</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Remove @csrf_exempt or add webhook signature verification </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Only use @csrf_exempt with verified signature-based auth.</p>
+                  <pre># Option 1: Remove @csrf_exempt (preferred)
+# Option 2: Add webhook signature verification:
+# import hmac, hashlib
+# sig = request.headers.get(&#x27;X-Signature&#x27;)
+# if not hmac.compare_digest(sig, compute_sig(request.body)):
+#     return HttpResponse(status=403)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">CSRF Protection Explicitly Disabled on View</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:671</div>
+                <p style="margin:0.75rem 0">@csrf_exempt disables CSRF protection for this view. Unless this is a verified webhook endpoint with alternative authentication, this is a CSRF vulnerability.</p>
+                <pre>@csrf_exempt</pre>
+                <div class="meta">
+                  <span>ID: 89f2f1e7</span>
+                  <span>CWE-352</span>
+                  <span>A01:2021 – Broken Access Control</span>
+                  <span>Cross-Site Request Forgery</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Remove @csrf_exempt or add webhook signature verification </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Only use @csrf_exempt with verified signature-based auth.</p>
+                  <pre># Option 1: Remove @csrf_exempt (preferred)
+# Option 2: Add webhook signature verification:
+# import hmac, hashlib
+# sig = request.headers.get(&#x27;X-Signature&#x27;)
+# if not hmac.compare_digest(sig, compute_sig(request.body)):
+#     return HttpResponse(status=403)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">CSRF Protection Explicitly Disabled on View</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:700</div>
+                <p style="margin:0.75rem 0">@csrf_exempt disables CSRF protection for this view. Unless this is a verified webhook endpoint with alternative authentication, this is a CSRF vulnerability.</p>
+                <pre>@csrf_exempt</pre>
+                <div class="meta">
+                  <span>ID: e147fabe</span>
+                  <span>CWE-352</span>
+                  <span>A01:2021 – Broken Access Control</span>
+                  <span>Cross-Site Request Forgery</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Remove @csrf_exempt or add webhook signature verification </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Only use @csrf_exempt with verified signature-based auth.</p>
+                  <pre># Option 1: Remove @csrf_exempt (preferred)
+# Option 2: Add webhook signature verification:
+# import hmac, hashlib
+# sig = request.headers.get(&#x27;X-Signature&#x27;)
+# if not hmac.compare_digest(sig, compute_sig(request.body)):
+#     return HttpResponse(status=403)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">CSRF Protection Explicitly Disabled on View</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:724</div>
+                <p style="margin:0.75rem 0">@csrf_exempt disables CSRF protection for this view. Unless this is a verified webhook endpoint with alternative authentication, this is a CSRF vulnerability.</p>
+                <pre>@csrf_exempt</pre>
+                <div class="meta">
+                  <span>ID: 02b21b9e</span>
+                  <span>CWE-352</span>
+                  <span>A01:2021 – Broken Access Control</span>
+                  <span>Cross-Site Request Forgery</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Remove @csrf_exempt or add webhook signature verification </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Only use @csrf_exempt with verified signature-based auth.</p>
+                  <pre># Option 1: Remove @csrf_exempt (preferred)
+# Option 2: Add webhook signature verification:
+# import hmac, hashlib
+# sig = request.headers.get(&#x27;X-Signature&#x27;)
+# if not hmac.compare_digest(sig, compute_sig(request.body)):
+#     return HttpResponse(status=403)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">CSRF Protection Explicitly Disabled on View</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:757</div>
+                <p style="margin:0.75rem 0">@csrf_exempt disables CSRF protection for this view. Unless this is a verified webhook endpoint with alternative authentication, this is a CSRF vulnerability.</p>
+                <pre>@csrf_exempt</pre>
+                <div class="meta">
+                  <span>ID: cace8ba5</span>
+                  <span>CWE-352</span>
+                  <span>A01:2021 – Broken Access Control</span>
+                  <span>Cross-Site Request Forgery</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Remove @csrf_exempt or add webhook signature verification </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Only use @csrf_exempt with verified signature-based auth.</p>
+                  <pre># Option 1: Remove @csrf_exempt (preferred)
+# Option 2: Add webhook signature verification:
+# import hmac, hashlib
+# sig = request.headers.get(&#x27;X-Signature&#x27;)
+# if not hmac.compare_digest(sig, compute_sig(request.body)):
+#     return HttpResponse(status=403)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">CSRF Protection Explicitly Disabled on View</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:787</div>
+                <p style="margin:0.75rem 0">@csrf_exempt disables CSRF protection for this view. Unless this is a verified webhook endpoint with alternative authentication, this is a CSRF vulnerability.</p>
+                <pre>@csrf_exempt</pre>
+                <div class="meta">
+                  <span>ID: ff1a7f9e</span>
+                  <span>CWE-352</span>
+                  <span>A01:2021 – Broken Access Control</span>
+                  <span>Cross-Site Request Forgery</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Remove @csrf_exempt or add webhook signature verification </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Only use @csrf_exempt with verified signature-based auth.</p>
+                  <pre># Option 1: Remove @csrf_exempt (preferred)
+# Option 2: Add webhook signature verification:
+# import hmac, hashlib
+# sig = request.headers.get(&#x27;X-Signature&#x27;)
+# if not hmac.compare_digest(sig, compute_sig(request.body)):
+#     return HttpResponse(status=403)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">CSRF Protection Explicitly Disabled on View</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:841</div>
+                <p style="margin:0.75rem 0">@csrf_exempt disables CSRF protection for this view. Unless this is a verified webhook endpoint with alternative authentication, this is a CSRF vulnerability.</p>
+                <pre>@csrf_exempt</pre>
+                <div class="meta">
+                  <span>ID: daf8f944</span>
+                  <span>CWE-352</span>
+                  <span>A01:2021 – Broken Access Control</span>
+                  <span>Cross-Site Request Forgery</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Remove @csrf_exempt or add webhook signature verification </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Only use @csrf_exempt with verified signature-based auth.</p>
+                  <pre># Option 1: Remove @csrf_exempt (preferred)
+# Option 2: Add webhook signature verification:
+# import hmac, hashlib
+# sig = request.headers.get(&#x27;X-Signature&#x27;)
+# if not hmac.compare_digest(sig, compute_sig(request.body)):
+#     return HttpResponse(status=403)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">CSRF Protection Explicitly Disabled on View</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:887</div>
+                <p style="margin:0.75rem 0">@csrf_exempt disables CSRF protection for this view. Unless this is a verified webhook endpoint with alternative authentication, this is a CSRF vulnerability.</p>
+                <pre>@csrf_exempt</pre>
+                <div class="meta">
+                  <span>ID: f0daee82</span>
+                  <span>CWE-352</span>
+                  <span>A01:2021 – Broken Access Control</span>
+                  <span>Cross-Site Request Forgery</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Remove @csrf_exempt or add webhook signature verification </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Only use @csrf_exempt with verified signature-based auth.</p>
+                  <pre># Option 1: Remove @csrf_exempt (preferred)
+# Option 2: Add webhook signature verification:
+# import hmac, hashlib
+# sig = request.headers.get(&#x27;X-Signature&#x27;)
+# if not hmac.compare_digest(sig, compute_sig(request.body)):
+#     return HttpResponse(status=403)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">Mass Assignment via fields=&#x27;__all__&#x27;</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/serializers.py:25</div>
+                <p style="margin:0.75rem 0">Using fields=&#x27;__all__&#x27; in ModelForm exposes all model fields to user input, including privileged fields like is_admin, is_staff, or balance that should never be user-controlled.</p>
+                <pre>fields = &#x27;__all__&#x27;</pre>
+                <div class="meta">
+                  <span>ID: 615ec3c6</span>
+                  <span>CWE-915</span>
+                  <span>A01:2021 – Broken Access Control</span>
+                  <span>Mass Assignment</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Explicitly list allowed fields </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Always whitelist fields instead of using __all__.</p>
+                  <pre># Explicitly list only the fields users should control:
+fields = [&#x27;username&#x27;, &#x27;email&#x27;, &#x27;bio&#x27;]  # NOT is_admin, is_staff, balance</pre>
+                  
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">Mass Assignment via fields=&#x27;__all__&#x27;</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/serializers.py:31</div>
+                <p style="margin:0.75rem 0">Using fields=&#x27;__all__&#x27; in ModelForm exposes all model fields to user input, including privileged fields like is_admin, is_staff, or balance that should never be user-controlled.</p>
+                <pre>fields = &#x27;__all__&#x27;</pre>
+                <div class="meta">
+                  <span>ID: 3abd1b66</span>
+                  <span>CWE-915</span>
+                  <span>A01:2021 – Broken Access Control</span>
+                  <span>Mass Assignment</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Explicitly list allowed fields </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Always whitelist fields instead of using __all__.</p>
+                  <pre># Explicitly list only the fields users should control:
+fields = [&#x27;username&#x27;, &#x27;email&#x27;, &#x27;bio&#x27;]  # NOT is_admin, is_staff, balance</pre>
+                  
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">Mass Assignment via fields=&#x27;__all__&#x27;</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/serializers.py:38</div>
+                <p style="margin:0.75rem 0">Using fields=&#x27;__all__&#x27; in ModelForm exposes all model fields to user input, including privileged fields like is_admin, is_staff, or balance that should never be user-controlled.</p>
+                <pre>fields = &#x27;__all__&#x27;</pre>
+                <div class="meta">
+                  <span>ID: 4bdcbea7</span>
+                  <span>CWE-915</span>
+                  <span>A01:2021 – Broken Access Control</span>
+                  <span>Mass Assignment</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Explicitly list allowed fields </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Always whitelist fields instead of using __all__.</p>
+                  <pre># Explicitly list only the fields users should control:
+fields = [&#x27;username&#x27;, &#x27;email&#x27;, &#x27;bio&#x27;]  # NOT is_admin, is_staff, balance</pre>
+                  
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">Mass Assignment via fields=&#x27;__all__&#x27;</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/serializers.py:44</div>
+                <p style="margin:0.75rem 0">Using fields=&#x27;__all__&#x27; in ModelForm exposes all model fields to user input, including privileged fields like is_admin, is_staff, or balance that should never be user-controlled.</p>
+                <pre>fields = &#x27;__all__&#x27;</pre>
+                <div class="meta">
+                  <span>ID: 401fa3e0</span>
+                  <span>CWE-915</span>
+                  <span>A01:2021 – Broken Access Control</span>
+                  <span>Mass Assignment</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Explicitly list allowed fields </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Always whitelist fields instead of using __all__.</p>
+                  <pre># Explicitly list only the fields users should control:
+fields = [&#x27;username&#x27;, &#x27;email&#x27;, &#x27;bio&#x27;]  # NOT is_admin, is_staff, balance</pre>
+                  
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">ALLOWED_HOSTS Wildcard (*) Permits Host Header Injection</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 vulnshop/settings.py:26</div>
+                <p style="margin:0.75rem 0">Setting ALLOWED_HOSTS = [&#x27;*&#x27;] disables Django&#x27;s host header validation, making the application vulnerable to Host Header Injection attacks which can lead to cache poisoning, SSRF, and password reset poisoning.</p>
+                <pre>ALLOWED_HOSTS = [&#x27;*&#x27;]</pre>
+                <div class="meta">
+                  <span>ID: 4161d53d</span>
+                  <span>CWE-20</span>
+                  <span>A05:2021 – Security Misconfiguration</span>
+                  <span>Security Misconfiguration</span>
+                </div>
+                
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">Session Cookie Transmitted Over HTTP</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 vulnshop/settings.py:103</div>
+                <p style="margin:0.75rem 0">SESSION_COOKIE_SECURE=False allows session cookies to be transmitted over unencrypted HTTP connections, exposing them to network eavesdroppers.</p>
+                <pre>SESSION_COOKIE_SECURE = False</pre>
+                <div class="meta">
+                  <span>ID: 36c743f8</span>
+                  <span>CWE-614</span>
+                  <span>A02:2021 – Cryptographic Failures</span>
+                  <span>Sensitive Data Exposure</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Replace insecure setting </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Change SESSION_COOKIE_SECURE = False to SESSION_COOKIE_SECURE = True</p>
+                  <pre>SESSION_COOKIE_SECURE = True</pre>
+                  
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">CORS Configured to Allow All Origins</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 vulnshop/settings.py:113</div>
+                <p style="margin:0.75rem 0">CORS_ALLOW_ALL_ORIGINS=True allows any website to make cross-origin requests to your API, bypassing the Same-Origin Policy.</p>
+                <pre>CORS_ALLOW_ALL_ORIGINS = True</pre>
+                <div class="meta">
+                  <span>ID: 0c4a594c</span>
+                  <span>CWE-942</span>
+                  <span>A05:2021 – Security Misconfiguration</span>
+                  <span>Security Misconfiguration</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Replace insecure setting </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Change CORS_ALLOW_ALL_ORIGINS = True to CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = [
+    &quot;https://yourdomain.com&quot;,
+]</p>
+                  <pre>CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = [
+    &quot;https://yourdomain.com&quot;,
+]</pre>
+                  
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">CSRF Protection Explicitly Disabled on View</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 scanner/scanner.py:473</div>
+                <p style="margin:0.75rem 0">@csrf_exempt disables CSRF protection for this view. Unless this is a verified webhook endpoint with alternative authentication, this is a CSRF vulnerability.</p>
+                <pre># Remove all @csrf_exempt decorators from views</pre>
+                <div class="meta">
+                  <span>ID: e58211f8</span>
+                  <span>CWE-352</span>
+                  <span>A01:2021 – Broken Access Control</span>
+                  <span>Cross-Site Request Forgery</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Remove @csrf_exempt or add webhook signature verification </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Only use @csrf_exempt with verified signature-based auth.</p>
+                  <pre># Option 1: Remove @csrf_exempt (preferred)
+# Option 2: Add webhook signature verification:
+# import hmac, hashlib
+# sig = request.headers.get(&#x27;X-Signature&#x27;)
+# if not hmac.compare_digest(sig, compute_sig(request.body)):
+#     return HttpResponse(status=403)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">Negative Value Manipulation – Price/Quantity Not Validated</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:283</div>
+                <p style="margin:0.75rem 0">User-supplied price or quantity values accepted without non-negative validation. Attackers can submit negative quantities to increase their balance or receive refunds on purchases.</p>
+                <pre>quantity   = int(request.POST.get(&#x27;quantity&#x27;, 1))   # VULN-C01: can be -1</pre>
+                <div class="meta">
+                  <span>ID: fbd0ee6f</span>
+                  <span>CWE-20</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Validate that price/quantity is positive </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Always validate user-supplied numeric inputs server-side.</p>
+                  <pre>quantity = int(request.POST.get(&#x27;quantity&#x27;, 1))
+if quantity &lt;= 0:
+    return HttpResponseBadRequest(&#x27;Quantity must be positive&#x27;)
+# Never trust client-side prices; always look up server-side:
+product = get_object_or_404(Product, pk=product_id)
+total = product.price * quantity  # Use DB price, not request price</pre>
+                  
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">Negative Value Manipulation – Price/Quantity Not Validated</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:804</div>
+                <p style="margin:0.75rem 0">User-supplied price or quantity values accepted without non-negative validation. Attackers can submit negative quantities to increase their balance or receive refunds on purchases.</p>
+                <pre>amount = float(request.POST.get(&#x27;amount&#x27;, 0))   # VULN-BL02: can be -100</pre>
+                <div class="meta">
+                  <span>ID: 2ddceea3</span>
+                  <span>CWE-20</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Validate that price/quantity is positive </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Always validate user-supplied numeric inputs server-side.</p>
+                  <pre>quantity = int(request.POST.get(&#x27;quantity&#x27;, 1))
+if quantity &lt;= 0:
+    return HttpResponseBadRequest(&#x27;Quantity must be positive&#x27;)
+# Never trust client-side prices; always look up server-side:
+product = get_object_or_404(Product, pk=product_id)
+total = product.price * quantity  # Use DB price, not request price</pre>
+                  
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">Workflow State Bypass – Direct Status Update Without Validation</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:445</div>
+                <p style="margin:0.75rem 0">Order or workflow status is set directly without verifying the current state and valid transitions. Attackers may skip required steps (e.g., mark unpaid orders as paid) by accessing endpoints out of sequence.</p>
+                <pre>status=&#x27;paid&#x27;,</pre>
+                <div class="meta">
+                  <span>ID: e2a0d26e</span>
+                  <span>CWE-841</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Implement state machine with valid transition checks </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Enforce state machine transitions to prevent workflow bypass.</p>
+                  <pre>VALID_TRANSITIONS = {
+    &#x27;pending&#x27;: [&#x27;processing&#x27;, &#x27;cancelled&#x27;],
+    &#x27;processing&#x27;: [&#x27;shipped&#x27;, &#x27;cancelled&#x27;],
+    &#x27;shipped&#x27;: [&#x27;delivered&#x27;],
+}
+
+def transition_order(order, new_status, user):
+    if new_status not in VALID_TRANSITIONS.get(order.status, []):
+        raise ValueError(f&#x27;Invalid transition: {order.status} -&gt; {new_status}&#x27;)
+    order.status = new_status
+    order.save()</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">Race Condition in Balance/Inventory Check</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 scanner/scanner.py:738</div>
+                <p style="margin:0.75rem 0">Balance or inventory check without atomic transaction is vulnerable to TOCTOU (Time-of-Check to Time-of-Use) race conditions. Concurrent requests can pass the check and overdraft accounts or oversell inventory.</p>
+                <pre>if quantity &lt; 1 or quantity &gt; 100:</pre>
+                <div class="meta">
+                  <span>ID: 41565928</span>
+                  <span>CWE-362</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Race Condition</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Wrap in atomic transaction with select_for_update </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">select_for_update() acquires a database row lock, preventing concurrent modifications until the transaction completes.</p>
+                  <pre>from django.db import transaction
+
+with transaction.atomic():
+    # Lock the row for the duration of the transaction
+    account = Account.objects.select_for_update().get(pk=account_id)
+    if account.balance &gt;= amount:
+        account.balance -= amount
+        account.save()
+    else:
+        raise InsufficientFundsError()</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">Negative Value Manipulation – Price/Quantity Not Validated</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 scanner/scanner.py:734</div>
+                <p style="margin:0.75rem 0">User-supplied price or quantity values accepted without non-negative validation. Attackers can submit negative quantities to increase their balance or receive refunds on purchases.</p>
+                <pre>quantity = int(request.POST.get(&#x27;quantity&#x27;, 1))  # accepts -1</pre>
+                <div class="meta">
+                  <span>ID: 8bac5337</span>
+                  <span>CWE-20</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Validate that price/quantity is positive </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Always validate user-supplied numeric inputs server-side.</p>
+                  <pre>quantity = int(request.POST.get(&#x27;quantity&#x27;, 1))
+if quantity &lt;= 0:
+    return HttpResponseBadRequest(&#x27;Quantity must be positive&#x27;)
+# Never trust client-side prices; always look up server-side:
+product = get_object_or_404(Product, pk=product_id)
+total = product.price * quantity  # Use DB price, not request price</pre>
+                  
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">Negative Value Manipulation – Price/Quantity Not Validated</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 scanner/scanner.py:737</div>
+                <p style="margin:0.75rem 0">User-supplied price or quantity values accepted without non-negative validation. Attackers can submit negative quantities to increase their balance or receive refunds on purchases.</p>
+                <pre>quantity = int(request.POST.get(&#x27;quantity&#x27;, 1))</pre>
+                <div class="meta">
+                  <span>ID: a250a83b</span>
+                  <span>CWE-20</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Validate that price/quantity is positive </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Always validate user-supplied numeric inputs server-side.</p>
+                  <pre>quantity = int(request.POST.get(&#x27;quantity&#x27;, 1))
+if quantity &lt;= 0:
+    return HttpResponseBadRequest(&#x27;Quantity must be positive&#x27;)
+# Never trust client-side prices; always look up server-side:
+product = get_object_or_404(Product, pk=product_id)
+total = product.price * quantity  # Use DB price, not request price</pre>
+                  
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">Workflow State Bypass – Direct Status Update Without Validation</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 scanner/scanner.py:891</div>
+                <p style="margin:0.75rem 0">Order or workflow status is set directly without verifying the current state and valid transitions. Attackers may skip required steps (e.g., mark unpaid orders as paid) by accessing endpoints out of sequence.</p>
+                <pre>status=&#x27;completed&#x27;).aggregate(Sum(&#x27;amount&#x27;))[&#x27;amount__sum&#x27;] or Decimal(&#x27;0&#x27;)</pre>
+                <div class="meta">
+                  <span>ID: 4f68e8a9</span>
+                  <span>CWE-841</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Implement state machine with valid transition checks </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Enforce state machine transitions to prevent workflow bypass.</p>
+                  <pre>VALID_TRANSITIONS = {
+    &#x27;pending&#x27;: [&#x27;processing&#x27;, &#x27;cancelled&#x27;],
+    &#x27;processing&#x27;: [&#x27;shipped&#x27;, &#x27;cancelled&#x27;],
+    &#x27;shipped&#x27;: [&#x27;delivered&#x27;],
+}
+
+def transition_order(order, new_status, user):
+    if new_status not in VALID_TRANSITIONS.get(order.status, []):
+        raise ValueError(f&#x27;Invalid transition: {order.status} -&gt; {new_status}&#x27;)
+    order.status = new_status
+    order.save()</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">Workflow State Bypass – Direct Status Update Without Validation</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/management/commands/seed_data.py:193</div>
+                <p style="margin:0.75rem 0">Order or workflow status is set directly without verifying the current state and valid transitions. Attackers may skip required steps (e.g., mark unpaid orders as paid) by accessing endpoints out of sequence.</p>
+                <pre>status=&#x27;completed&#x27;,</pre>
+                <div class="meta">
+                  <span>ID: 9f570fec</span>
+                  <span>CWE-841</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Implement state machine with valid transition checks </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Enforce state machine transitions to prevent workflow bypass.</p>
+                  <pre>VALID_TRANSITIONS = {
+    &#x27;pending&#x27;: [&#x27;processing&#x27;, &#x27;cancelled&#x27;],
+    &#x27;processing&#x27;: [&#x27;shipped&#x27;, &#x27;cancelled&#x27;],
+    &#x27;shipped&#x27;: [&#x27;delivered&#x27;],
+}
+
+def transition_order(order, new_status, user):
+    if new_status not in VALID_TRANSITIONS.get(order.status, []):
+        raise ValueError(f&#x27;Invalid transition: {order.status} -&gt; {new_status}&#x27;)
+    order.status = new_status
+    order.save()</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">Dangerous Module Import: pickle</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:606</div>
+                <p style="margin:0.75rem 0">Pickle deserialization executes arbitrary code. Use JSON or MessagePack instead.</p>
+                <pre>import pickle, os</pre>
+                <div class="meta">
+                  <span>ID: 3e43a551</span>
+                  <span>CWE-502</span>
+                  <span>A06:2021 – Vulnerable and Outdated Components</span>
+                  <span>Insecure Dependencies</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Replace pickle with safe alternative </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Pickle deserialization executes arbitrary code. Use JSON or MessagePack instead.</p>
+                  <pre># For serialization: use json or msgpack
+import json
+data = json.dumps(obj)  # Safe serialization
+obj = json.loads(data)  # Safe deserialization
+
+# For XML: use defusedxml
+# pip install defusedxml
+import defusedxml.ElementTree as ET</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">Dangerous Module Import: xml.etree.ElementTree</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 scanner/scanner.py:345</div>
+                <p style="margin:0.75rem 0">xml.etree.ElementTree is vulnerable to XML bomb attacks. Use defusedxml.</p>
+                <pre>import xml.etree.ElementTree as ET</pre>
+                <div class="meta">
+                  <span>ID: 7b5ab960</span>
+                  <span>CWE-502</span>
+                  <span>A06:2021 – Vulnerable and Outdated Components</span>
+                  <span>Insecure Dependencies</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Replace xml.etree.ElementTree with safe alternative </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">xml.etree.ElementTree is vulnerable to XML bomb attacks. Use defusedxml.</p>
+                  <pre># For serialization: use json or msgpack
+import json
+data = json.dumps(obj)  # Safe serialization
+obj = json.loads(data)  # Safe deserialization
+
+# For XML: use defusedxml
+# pip install defusedxml
+import defusedxml.ElementTree as ET</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-HIGH">HIGH</span>
+                <span class="vuln-title">Dangerous Module Import: pickle</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 scanner/scanner.py:1014</div>
+                <p style="margin:0.75rem 0">Pickle deserialization executes arbitrary code. Use JSON or MessagePack instead.</p>
+                <pre>import pickle, os, struct</pre>
+                <div class="meta">
+                  <span>ID: ea40020f</span>
+                  <span>CWE-502</span>
+                  <span>A06:2021 – Vulnerable and Outdated Components</span>
+                  <span>Insecure Dependencies</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Replace pickle with safe alternative </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Pickle deserialization executes arbitrary code. Use JSON or MessagePack instead.</p>
+                  <pre># For serialization: use json or msgpack
+import json
+data = json.dumps(obj)  # Safe serialization
+obj = json.loads(data)  # Safe deserialization
+
+# For XML: use defusedxml
+# pip install defusedxml
+import defusedxml.ElementTree as ET</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">HSTS Not Configured (SECURE_HSTS_SECONDS=0)</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 vulnshop/settings.py:136</div>
+                <p style="margin:0.75rem 0">HTTP Strict Transport Security (HSTS) forces browsers to use HTTPS. Without it, users can be downgraded to HTTP connections via MITM attacks.</p>
+                <pre>SECURE_HSTS_SECONDS = 0</pre>
+                <div class="meta">
+                  <span>ID: cdf51cd3</span>
+                  <span>CWE-319</span>
+                  <span>A05:2021 – Security Misconfiguration</span>
+                  <span>Security Misconfiguration</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Replace insecure setting </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Change SECURE_HSTS_SECONDS = 0 to SECURE_HSTS_SECONDS = 31536000  # 1 year</p>
+                  <pre>SECURE_HSTS_SECONDS = 31536000  # 1 year</pre>
+                  
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Clickjacking Protection Disabled (X_FRAME_OPTIONS)</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 vulnshop/settings.py:138</div>
+                <p style="margin:0.75rem 0">Setting X_FRAME_OPTIONS to ALLOW or ALLOWALL disables clickjacking protection, allowing the site to be embedded in iframes on attacker-controlled pages.</p>
+                <pre>X_FRAME_OPTIONS = &#x27;ALLOWALL&#x27;</pre>
+                <div class="meta">
+                  <span>ID: 09befc22</span>
+                  <span>CWE-1021</span>
+                  <span>A05:2021 – Security Misconfiguration</span>
+                  <span>Security Misconfiguration</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Replace insecure setting </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Change X_FRAME_OPTIONS = &quot;ALLOWALL&quot; to X_FRAME_OPTIONS = &quot;DENY&quot;</p>
+                  <pre>X_FRAME_OPTIONS = &quot;DENY&quot;</pre>
+                  
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Coupon/Promo Code Reuse Not Restricted Per User</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/admin.py:5</div>
+                <p style="margin:0.75rem 0">Coupon or promo code usage does not appear to track per-user redemption. Without per-user tracking, codes can be reused indefinitely by the same user.</p>
+                <pre>Coupon, SupportTicket, Wishlist, Newsletter,</pre>
+                <div class="meta">
+                  <span>ID: 3bc86feb</span>
+                  <span>CWE-837</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Track coupon usage per user </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use unique_together constraint to enforce one-per-user coupon usage.</p>
+                  <pre># Model to track coupon usage:
+class CouponUsage(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (&#x27;coupon&#x27;, &#x27;user&#x27;)  # One use per user
+
+# Check before applying:
+if CouponUsage.objects.filter(coupon=coupon, user=request.user).exists():
+    raise ValidationError(&#x27;Coupon already used&#x27;)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Floating-Point Arithmetic Used for Monetary Values</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:804</div>
+                <p style="margin:0.75rem 0">Floating-point numbers cannot represent decimal currency values exactly. Operations like 0.1 + 0.2 = 0.30000000000000004 can cause rounding errors in financial calculations, leading to accounting discrepancies or exploitable precision bugs.</p>
+                <pre>amount = float(request.POST.get(&#x27;amount&#x27;, 0))   # VULN-BL02: can be -100</pre>
+                <div class="meta">
+                  <span>ID: 2a5d0154</span>
+                  <span>CWE-681</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Use Python Decimal for monetary values </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Python&#x27;s Decimal type provides exact decimal arithmetic.</p>
+                  <pre>from decimal import Decimal, ROUND_HALF_UP
+
+# Use Decimal for all monetary calculations:
+price = Decimal(&#x27;19.99&#x27;)
+tax = price * Decimal(&#x27;0.08&#x27;)
+total = (price + tax).quantize(Decimal(&#x27;0.01&#x27;), rounding=ROUND_HALF_UP)
+
+# In Django models:
+# price = models.DecimalField(max_digits=10, decimal_places=2)</pre>
+                  
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Coupon/Promo Code Reuse Not Restricted Per User</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:376</div>
+                <p style="margin:0.75rem 0">Coupon or promo code usage does not appear to track per-user redemption. Without per-user tracking, codes can be reused indefinitely by the same user.</p>
+                <pre>coupon = Coupon.objects.get(code=code, is_active=True)</pre>
+                <div class="meta">
+                  <span>ID: 722663e7</span>
+                  <span>CWE-837</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Track coupon usage per user </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use unique_together constraint to enforce one-per-user coupon usage.</p>
+                  <pre># Model to track coupon usage:
+class CouponUsage(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (&#x27;coupon&#x27;, &#x27;user&#x27;)  # One use per user
+
+# Check before applying:
+if CouponUsage.objects.filter(coupon=coupon, user=request.user).exists():
+    raise ValidationError(&#x27;Coupon already used&#x27;)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Coupon/Promo Code Reuse Not Restricted Per User</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:381</div>
+                <p style="margin:0.75rem 0">Coupon or promo code usage does not appear to track per-user redemption. Without per-user tracking, codes can be reused indefinitely by the same user.</p>
+                <pre>&#x27;discount&#x27;: str(coupon.discount_value),</pre>
+                <div class="meta">
+                  <span>ID: 6f15db2c</span>
+                  <span>CWE-837</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Track coupon usage per user </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use unique_together constraint to enforce one-per-user coupon usage.</p>
+                  <pre># Model to track coupon usage:
+class CouponUsage(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (&#x27;coupon&#x27;, &#x27;user&#x27;)  # One use per user
+
+# Check before applying:
+if CouponUsage.objects.filter(coupon=coupon, user=request.user).exists():
+    raise ValidationError(&#x27;Coupon already used&#x27;)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Coupon/Promo Code Reuse Not Restricted Per User</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:382</div>
+                <p style="margin:0.75rem 0">Coupon or promo code usage does not appear to track per-user redemption. Without per-user tracking, codes can be reused indefinitely by the same user.</p>
+                <pre>&#x27;type&#x27;: coupon.discount_type,</pre>
+                <div class="meta">
+                  <span>ID: 3942ccd4</span>
+                  <span>CWE-837</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Track coupon usage per user </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use unique_together constraint to enforce one-per-user coupon usage.</p>
+                  <pre># Model to track coupon usage:
+class CouponUsage(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (&#x27;coupon&#x27;, &#x27;user&#x27;)  # One use per user
+
+# Check before applying:
+if CouponUsage.objects.filter(coupon=coupon, user=request.user).exists():
+    raise ValidationError(&#x27;Coupon already used&#x27;)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Coupon/Promo Code Reuse Not Restricted Per User</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:384</div>
+                <p style="margin:0.75rem 0">Coupon or promo code usage does not appear to track per-user redemption. Without per-user tracking, codes can be reused indefinitely by the same user.</p>
+                <pre>except Coupon.DoesNotExist:</pre>
+                <div class="meta">
+                  <span>ID: e9db1381</span>
+                  <span>CWE-837</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Track coupon usage per user </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use unique_together constraint to enforce one-per-user coupon usage.</p>
+                  <pre># Model to track coupon usage:
+class CouponUsage(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (&#x27;coupon&#x27;, &#x27;user&#x27;)  # One use per user
+
+# Check before applying:
+if CouponUsage.objects.filter(coupon=coupon, user=request.user).exists():
+    raise ValidationError(&#x27;Coupon already used&#x27;)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Coupon/Promo Code Reuse Not Restricted Per User</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:385</div>
+                <p style="margin:0.75rem 0">Coupon or promo code usage does not appear to track per-user redemption. Without per-user tracking, codes can be reused indefinitely by the same user.</p>
+                <pre>return JsonResponse({&#x27;status&#x27;: &#x27;error&#x27;, &#x27;message&#x27;: &#x27;Coupon not found&#x27;})   # VULN-CP05</pre>
+                <div class="meta">
+                  <span>ID: 5187789e</span>
+                  <span>CWE-837</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Track coupon usage per user </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use unique_together constraint to enforce one-per-user coupon usage.</p>
+                  <pre># Model to track coupon usage:
+class CouponUsage(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (&#x27;coupon&#x27;, &#x27;user&#x27;)  # One use per user
+
+# Check before applying:
+if CouponUsage.objects.filter(coupon=coupon, user=request.user).exists():
+    raise ValidationError(&#x27;Coupon already used&#x27;)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Coupon/Promo Code Reuse Not Restricted Per User</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:854</div>
+                <p style="margin:0.75rem 0">Coupon or promo code usage does not appear to track per-user redemption. Without per-user tracking, codes can be reused indefinitely by the same user.</p>
+                <pre>discount = points_to_use * 0.01   # 1 point = ₹0.01</pre>
+                <div class="meta">
+                  <span>ID: 68864285</span>
+                  <span>CWE-837</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Track coupon usage per user </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use unique_together constraint to enforce one-per-user coupon usage.</p>
+                  <pre># Model to track coupon usage:
+class CouponUsage(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (&#x27;coupon&#x27;, &#x27;user&#x27;)  # One use per user
+
+# Check before applying:
+if CouponUsage.objects.filter(coupon=coupon, user=request.user).exists():
+    raise ValidationError(&#x27;Coupon already used&#x27;)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Coupon/Promo Code Reuse Not Restricted Per User</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/views.py:856</div>
+                <p style="margin:0.75rem 0">Coupon or promo code usage does not appear to track per-user redemption. Without per-user tracking, codes can be reused indefinitely by the same user.</p>
+                <pre>return JsonResponse({&#x27;discount&#x27;: discount})</pre>
+                <div class="meta">
+                  <span>ID: 959437ca</span>
+                  <span>CWE-837</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Track coupon usage per user </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use unique_together constraint to enforce one-per-user coupon usage.</p>
+                  <pre># Model to track coupon usage:
+class CouponUsage(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (&#x27;coupon&#x27;, &#x27;user&#x27;)  # One use per user
+
+# Check before applying:
+if CouponUsage.objects.filter(coupon=coupon, user=request.user).exists():
+    raise ValidationError(&#x27;Coupon already used&#x27;)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Coupon/Promo Code Reuse Not Restricted Per User</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/models.py:77</div>
+                <p style="margin:0.75rem 0">Coupon or promo code usage does not appear to track per-user redemption. Without per-user tracking, codes can be reused indefinitely by the same user.</p>
+                <pre>discount_pct = models.IntegerField(default=0)</pre>
+                <div class="meta">
+                  <span>ID: b883b738</span>
+                  <span>CWE-837</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Track coupon usage per user </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use unique_together constraint to enforce one-per-user coupon usage.</p>
+                  <pre># Model to track coupon usage:
+class CouponUsage(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (&#x27;coupon&#x27;, &#x27;user&#x27;)  # One use per user
+
+# Check before applying:
+if CouponUsage.objects.filter(coupon=coupon, user=request.user).exists():
+    raise ValidationError(&#x27;Coupon already used&#x27;)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Coupon/Promo Code Reuse Not Restricted Per User</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/models.py:83</div>
+                <p style="margin:0.75rem 0">Coupon or promo code usage does not appear to track per-user redemption. Without per-user tracking, codes can be reused indefinitely by the same user.</p>
+                <pre>return self.price * (1 - self.discount_pct / 100)</pre>
+                <div class="meta">
+                  <span>ID: 201f09af</span>
+                  <span>CWE-837</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Track coupon usage per user </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use unique_together constraint to enforce one-per-user coupon usage.</p>
+                  <pre># Model to track coupon usage:
+class CouponUsage(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (&#x27;coupon&#x27;, &#x27;user&#x27;)  # One use per user
+
+# Check before applying:
+if CouponUsage.objects.filter(coupon=coupon, user=request.user).exists():
+    raise ValidationError(&#x27;Coupon already used&#x27;)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Coupon/Promo Code Reuse Not Restricted Per User</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/models.py:126</div>
+                <p style="margin:0.75rem 0">Coupon or promo code usage does not appear to track per-user redemption. Without per-user tracking, codes can be reused indefinitely by the same user.</p>
+                <pre>class Coupon(models.Model):</pre>
+                <div class="meta">
+                  <span>ID: a5569857</span>
+                  <span>CWE-837</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Track coupon usage per user </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use unique_together constraint to enforce one-per-user coupon usage.</p>
+                  <pre># Model to track coupon usage:
+class CouponUsage(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (&#x27;coupon&#x27;, &#x27;user&#x27;)  # One use per user
+
+# Check before applying:
+if CouponUsage.objects.filter(coupon=coupon, user=request.user).exists():
+    raise ValidationError(&#x27;Coupon already used&#x27;)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Coupon/Promo Code Reuse Not Restricted Per User</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/models.py:154</div>
+                <p style="margin:0.75rem 0">Coupon or promo code usage does not appear to track per-user redemption. Without per-user tracking, codes can be reused indefinitely by the same user.</p>
+                <pre>discount       = models.DecimalField(max_digits=10, decimal_places=2, default=0)</pre>
+                <div class="meta">
+                  <span>ID: d71feceb</span>
+                  <span>CWE-837</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Track coupon usage per user </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use unique_together constraint to enforce one-per-user coupon usage.</p>
+                  <pre># Model to track coupon usage:
+class CouponUsage(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (&#x27;coupon&#x27;, &#x27;user&#x27;)  # One use per user
+
+# Check before applying:
+if CouponUsage.objects.filter(coupon=coupon, user=request.user).exists():
+    raise ValidationError(&#x27;Coupon already used&#x27;)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Coupon/Promo Code Reuse Not Restricted Per User</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/models.py:157</div>
+                <p style="margin:0.75rem 0">Coupon or promo code usage does not appear to track per-user redemption. Without per-user tracking, codes can be reused indefinitely by the same user.</p>
+                <pre>coupon         = models.ForeignKey(Coupon, null=True, blank=True, on_delete=models.SET_NULL)</pre>
+                <div class="meta">
+                  <span>ID: 8eb80c01</span>
+                  <span>CWE-837</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Track coupon usage per user </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use unique_together constraint to enforce one-per-user coupon usage.</p>
+                  <pre># Model to track coupon usage:
+class CouponUsage(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (&#x27;coupon&#x27;, &#x27;user&#x27;)  # One use per user
+
+# Check before applying:
+if CouponUsage.objects.filter(coupon=coupon, user=request.user).exists():
+    raise ValidationError(&#x27;Coupon already used&#x27;)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Coupon/Promo Code Reuse Not Restricted Per User</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 vulnshop/urls.py:20</div>
+                <p style="margin:0.75rem 0">Coupon or promo code usage does not appear to track per-user redemption. Without per-user tracking, codes can be reused indefinitely by the same user.</p>
+                <pre>path(&#x27;cart/coupon/&#x27;, views.apply_coupon, name=&#x27;apply_coupon&#x27;),</pre>
+                <div class="meta">
+                  <span>ID: 054a9a2f</span>
+                  <span>CWE-837</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Track coupon usage per user </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use unique_together constraint to enforce one-per-user coupon usage.</p>
+                  <pre># Model to track coupon usage:
+class CouponUsage(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (&#x27;coupon&#x27;, &#x27;user&#x27;)  # One use per user
+
+# Check before applying:
+if CouponUsage.objects.filter(coupon=coupon, user=request.user).exists():
+    raise ValidationError(&#x27;Coupon already used&#x27;)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Coupon/Promo Code Reuse Not Restricted Per User</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 scanner/reporter.py:292</div>
+                <p style="margin:0.75rem 0">Coupon or promo code usage does not appear to track per-user redemption. Without per-user tracking, codes can be reused indefinitely by the same user.</p>
+                <pre>f&#x27;exposure. Business logic flaws enable price manipulation, unlimited coupon abuse, and &#x27;</pre>
+                <div class="meta">
+                  <span>ID: 9f439886</span>
+                  <span>CWE-837</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Track coupon usage per user </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use unique_together constraint to enforce one-per-user coupon usage.</p>
+                  <pre># Model to track coupon usage:
+class CouponUsage(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (&#x27;coupon&#x27;, &#x27;user&#x27;)  # One use per user
+
+# Check before applying:
+if CouponUsage.objects.filter(coupon=coupon, user=request.user).exists():
+    raise ValidationError(&#x27;Coupon already used&#x27;)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Coupon/Promo Code Reuse Not Restricted Per User</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 scanner/app.py:314</div>
+                <p style="margin:0.75rem 0">Coupon or promo code usage does not appear to track per-user redemption. Without per-user tracking, codes can be reused indefinitely by the same user.</p>
+                <pre>{&#x27;name&#x27;:&#x27;Business Logic&#x27;,&#x27;color&#x27;:&#x27;#00695c&#x27;,&#x27;desc&#x27;:&#x27;Price manipulation, coupon abuse, race conditions&#x27;,</pre>
+                <div class="meta">
+                  <span>ID: 5ffe2a24</span>
+                  <span>CWE-837</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Track coupon usage per user </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use unique_together constraint to enforce one-per-user coupon usage.</p>
+                  <pre># Model to track coupon usage:
+class CouponUsage(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (&#x27;coupon&#x27;, &#x27;user&#x27;)  # One use per user
+
+# Check before applying:
+if CouponUsage.objects.filter(coupon=coupon, user=request.user).exists():
+    raise ValidationError(&#x27;Coupon already used&#x27;)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Coupon/Promo Code Reuse Not Restricted Per User</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 scanner/app.py:315</div>
+                <p style="margin:0.75rem 0">Coupon or promo code usage does not appear to track per-user redemption. Without per-user tracking, codes can be reused indefinitely by the same user.</p>
+                <pre>&#x27;tests&#x27;:[&#x27;Negative quantity&#x27;,&#x27;100% coupon&#x27;,&#x27;Client-side price&#x27;,&#x27;Mass order update&#x27;,&#x27;Unlimited refund&#x27;]},</pre>
+                <div class="meta">
+                  <span>ID: 34b43066</span>
+                  <span>CWE-837</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Track coupon usage per user </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use unique_together constraint to enforce one-per-user coupon usage.</p>
+                  <pre># Model to track coupon usage:
+class CouponUsage(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (&#x27;coupon&#x27;, &#x27;user&#x27;)  # One use per user
+
+# Check before applying:
+if CouponUsage.objects.filter(coupon=coupon, user=request.user).exists():
+    raise ValidationError(&#x27;Coupon already used&#x27;)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Floating-Point Arithmetic Used for Monetary Values</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 scanner/scanner.py:720</div>
+                <p style="margin:0.75rem 0">Floating-point numbers cannot represent decimal currency values exactly. Operations like 0.1 + 0.2 = 0.30000000000000004 can cause rounding errors in financial calculations, leading to accounting discrepancies or exploitable precision bugs.</p>
+                <pre>total = float(data[&#x27;cart_total&#x27;])</pre>
+                <div class="meta">
+                  <span>ID: 6da1e341</span>
+                  <span>CWE-681</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Use Python Decimal for monetary values </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Python&#x27;s Decimal type provides exact decimal arithmetic.</p>
+                  <pre>from decimal import Decimal, ROUND_HALF_UP
+
+# Use Decimal for all monetary calculations:
+price = Decimal(&#x27;19.99&#x27;)
+tax = price * Decimal(&#x27;0.08&#x27;)
+total = (price + tax).quantize(Decimal(&#x27;0.01&#x27;), rounding=ROUND_HALF_UP)
+
+# In Django models:
+# price = models.DecimalField(max_digits=10, decimal_places=2)</pre>
+                  
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Coupon/Promo Code Reuse Not Restricted Per User</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 scanner/scanner.py:821</div>
+                <p style="margin:0.75rem 0">Coupon or promo code usage does not appear to track per-user redemption. Without per-user tracking, codes can be reused indefinitely by the same user.</p>
+                <pre># Apply discounts server-side, never from client</pre>
+                <div class="meta">
+                  <span>ID: 5f9e0593</span>
+                  <span>CWE-837</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Track coupon usage per user </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use unique_together constraint to enforce one-per-user coupon usage.</p>
+                  <pre># Model to track coupon usage:
+class CouponUsage(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (&#x27;coupon&#x27;, &#x27;user&#x27;)  # One use per user
+
+# Check before applying:
+if CouponUsage.objects.filter(coupon=coupon, user=request.user).exists():
+    raise ValidationError(&#x27;Coupon already used&#x27;)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Coupon/Promo Code Reuse Not Restricted Per User</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 scanner/scanner.py:822</div>
+                <p style="margin:0.75rem 0">Coupon or promo code usage does not appear to track per-user redemption. Without per-user tracking, codes can be reused indefinitely by the same user.</p>
+                <pre>if coupon: total = apply_coupon(total, coupon)</pre>
+                <div class="meta">
+                  <span>ID: 9de05aac</span>
+                  <span>CWE-837</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Track coupon usage per user </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use unique_together constraint to enforce one-per-user coupon usage.</p>
+                  <pre># Model to track coupon usage:
+class CouponUsage(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (&#x27;coupon&#x27;, &#x27;user&#x27;)  # One use per user
+
+# Check before applying:
+if CouponUsage.objects.filter(coupon=coupon, user=request.user).exists():
+    raise ValidationError(&#x27;Coupon already used&#x27;)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Coupon/Promo Code Reuse Not Restricted Per User</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/management/commands/seed_data.py:14</div>
+                <p style="margin:0.75rem 0">Coupon or promo code usage does not appear to track per-user redemption. Without per-user tracking, codes can be reused indefinitely by the same user.</p>
+                <pre>Order, OrderItem, Payment, Coupon, ProductReview,</pre>
+                <div class="meta">
+                  <span>ID: dc94a79d</span>
+                  <span>CWE-837</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Track coupon usage per user </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use unique_together constraint to enforce one-per-user coupon usage.</p>
+                  <pre># Model to track coupon usage:
+class CouponUsage(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (&#x27;coupon&#x27;, &#x27;user&#x27;)  # One use per user
+
+# Check before applying:
+if CouponUsage.objects.filter(coupon=coupon, user=request.user).exists():
+    raise ValidationError(&#x27;Coupon already used&#x27;)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Coupon/Promo Code Reuse Not Restricted Per User</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/management/commands/seed_data.py:82</div>
+                <p style="margin:0.75rem 0">Coupon or promo code usage does not appear to track per-user redemption. Without per-user tracking, codes can be reused indefinitely by the same user.</p>
+                <pre>&#x27;stock&#x27;: 50, &#x27;discount_pct&#x27;: 5,</pre>
+                <div class="meta">
+                  <span>ID: 6850cc03</span>
+                  <span>CWE-837</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Track coupon usage per user </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use unique_together constraint to enforce one-per-user coupon usage.</p>
+                  <pre># Model to track coupon usage:
+class CouponUsage(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (&#x27;coupon&#x27;, &#x27;user&#x27;)  # One use per user
+
+# Check before applying:
+if CouponUsage.objects.filter(coupon=coupon, user=request.user).exists():
+    raise ValidationError(&#x27;Coupon already used&#x27;)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Coupon/Promo Code Reuse Not Restricted Per User</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/management/commands/seed_data.py:90</div>
+                <p style="margin:0.75rem 0">Coupon or promo code usage does not appear to track per-user redemption. Without per-user tracking, codes can be reused indefinitely by the same user.</p>
+                <pre>&#x27;stock&#x27;: 20, &#x27;discount_pct&#x27;: 10,</pre>
+                <div class="meta">
+                  <span>ID: e4268e9c</span>
+                  <span>CWE-837</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Track coupon usage per user </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use unique_together constraint to enforce one-per-user coupon usage.</p>
+                  <pre># Model to track coupon usage:
+class CouponUsage(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (&#x27;coupon&#x27;, &#x27;user&#x27;)  # One use per user
+
+# Check before applying:
+if CouponUsage.objects.filter(coupon=coupon, user=request.user).exists():
+    raise ValidationError(&#x27;Coupon already used&#x27;)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Coupon/Promo Code Reuse Not Restricted Per User</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/management/commands/seed_data.py:97</div>
+                <p style="margin:0.75rem 0">Coupon or promo code usage does not appear to track per-user redemption. Without per-user tracking, codes can be reused indefinitely by the same user.</p>
+                <pre>&#x27;stock&#x27;: 100, &#x27;discount_pct&#x27;: 0,</pre>
+                <div class="meta">
+                  <span>ID: 72adb545</span>
+                  <span>CWE-837</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Track coupon usage per user </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use unique_together constraint to enforce one-per-user coupon usage.</p>
+                  <pre># Model to track coupon usage:
+class CouponUsage(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (&#x27;coupon&#x27;, &#x27;user&#x27;)  # One use per user
+
+# Check before applying:
+if CouponUsage.objects.filter(coupon=coupon, user=request.user).exists():
+    raise ValidationError(&#x27;Coupon already used&#x27;)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Coupon/Promo Code Reuse Not Restricted Per User</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/management/commands/seed_data.py:104</div>
+                <p style="margin:0.75rem 0">Coupon or promo code usage does not appear to track per-user redemption. Without per-user tracking, codes can be reused indefinitely by the same user.</p>
+                <pre>&#x27;stock&#x27;: 200, &#x27;discount_pct&#x27;: 15,</pre>
+                <div class="meta">
+                  <span>ID: 098261d3</span>
+                  <span>CWE-837</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Track coupon usage per user </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use unique_together constraint to enforce one-per-user coupon usage.</p>
+                  <pre># Model to track coupon usage:
+class CouponUsage(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (&#x27;coupon&#x27;, &#x27;user&#x27;)  # One use per user
+
+# Check before applying:
+if CouponUsage.objects.filter(coupon=coupon, user=request.user).exists():
+    raise ValidationError(&#x27;Coupon already used&#x27;)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Coupon/Promo Code Reuse Not Restricted Per User</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/management/commands/seed_data.py:111</div>
+                <p style="margin:0.75rem 0">Coupon or promo code usage does not appear to track per-user redemption. Without per-user tracking, codes can be reused indefinitely by the same user.</p>
+                <pre>&#x27;stock&#x27;: 35, &#x27;discount_pct&#x27;: 20,</pre>
+                <div class="meta">
+                  <span>ID: 8bd8709a</span>
+                  <span>CWE-837</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Track coupon usage per user </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use unique_together constraint to enforce one-per-user coupon usage.</p>
+                  <pre># Model to track coupon usage:
+class CouponUsage(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (&#x27;coupon&#x27;, &#x27;user&#x27;)  # One use per user
+
+# Check before applying:
+if CouponUsage.objects.filter(coupon=coupon, user=request.user).exists():
+    raise ValidationError(&#x27;Coupon already used&#x27;)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Coupon/Promo Code Reuse Not Restricted Per User</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/management/commands/seed_data.py:118</div>
+                <p style="margin:0.75rem 0">Coupon or promo code usage does not appear to track per-user redemption. Without per-user tracking, codes can be reused indefinitely by the same user.</p>
+                <pre>&#x27;stock&#x27;: 75, &#x27;discount_pct&#x27;: 0,</pre>
+                <div class="meta">
+                  <span>ID: 5c87966d</span>
+                  <span>CWE-837</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Track coupon usage per user </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use unique_together constraint to enforce one-per-user coupon usage.</p>
+                  <pre># Model to track coupon usage:
+class CouponUsage(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (&#x27;coupon&#x27;, &#x27;user&#x27;)  # One use per user
+
+# Check before applying:
+if CouponUsage.objects.filter(coupon=coupon, user=request.user).exists():
+    raise ValidationError(&#x27;Coupon already used&#x27;)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Coupon/Promo Code Reuse Not Restricted Per User</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/management/commands/seed_data.py:142</div>
+                <p style="margin:0.75rem 0">Coupon or promo code usage does not appear to track per-user redemption. Without per-user tracking, codes can be reused indefinitely by the same user.</p>
+                <pre># ── Coupons (including abusable ones)</pre>
+                <div class="meta">
+                  <span>ID: fd270769</span>
+                  <span>CWE-837</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Track coupon usage per user </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use unique_together constraint to enforce one-per-user coupon usage.</p>
+                  <pre># Model to track coupon usage:
+class CouponUsage(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (&#x27;coupon&#x27;, &#x27;user&#x27;)  # One use per user
+
+# Check before applying:
+if CouponUsage.objects.filter(coupon=coupon, user=request.user).exists():
+    raise ValidationError(&#x27;Coupon already used&#x27;)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Coupon/Promo Code Reuse Not Restricted Per User</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/management/commands/seed_data.py:143</div>
+                <p style="margin:0.75rem 0">Coupon or promo code usage does not appear to track per-user redemption. Without per-user tracking, codes can be reused indefinitely by the same user.</p>
+                <pre>coupons = [</pre>
+                <div class="meta">
+                  <span>ID: 83309e91</span>
+                  <span>CWE-837</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Track coupon usage per user </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use unique_together constraint to enforce one-per-user coupon usage.</p>
+                  <pre># Model to track coupon usage:
+class CouponUsage(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (&#x27;coupon&#x27;, &#x27;user&#x27;)  # One use per user
+
+# Check before applying:
+if CouponUsage.objects.filter(coupon=coupon, user=request.user).exists():
+    raise ValidationError(&#x27;Coupon already used&#x27;)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Coupon/Promo Code Reuse Not Restricted Per User</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/management/commands/seed_data.py:145</div>
+                <p style="margin:0.75rem 0">Coupon or promo code usage does not appear to track per-user redemption. Without per-user tracking, codes can be reused indefinitely by the same user.</p>
+                <pre>&#x27;code&#x27;: &#x27;SAVE10&#x27;, &#x27;discount_type&#x27;: &#x27;pct&#x27;, &#x27;discount_value&#x27;: Decimal(&#x27;10&#x27;),</pre>
+                <div class="meta">
+                  <span>ID: 50b8190a</span>
+                  <span>CWE-837</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Track coupon usage per user </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use unique_together constraint to enforce one-per-user coupon usage.</p>
+                  <pre># Model to track coupon usage:
+class CouponUsage(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (&#x27;coupon&#x27;, &#x27;user&#x27;)  # One use per user
+
+# Check before applying:
+if CouponUsage.objects.filter(coupon=coupon, user=request.user).exists():
+    raise ValidationError(&#x27;Coupon already used&#x27;)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Coupon/Promo Code Reuse Not Restricted Per User</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/management/commands/seed_data.py:151</div>
+                <p style="margin:0.75rem 0">Coupon or promo code usage does not appear to track per-user redemption. Without per-user tracking, codes can be reused indefinitely by the same user.</p>
+                <pre>&#x27;code&#x27;: &#x27;FLAT500&#x27;, &#x27;discount_type&#x27;: &#x27;fixed&#x27;, &#x27;discount_value&#x27;: Decimal(&#x27;500&#x27;),</pre>
+                <div class="meta">
+                  <span>ID: 1f6b39b6</span>
+                  <span>CWE-837</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Track coupon usage per user </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use unique_together constraint to enforce one-per-user coupon usage.</p>
+                  <pre># Model to track coupon usage:
+class CouponUsage(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (&#x27;coupon&#x27;, &#x27;user&#x27;)  # One use per user
+
+# Check before applying:
+if CouponUsage.objects.filter(coupon=coupon, user=request.user).exists():
+    raise ValidationError(&#x27;Coupon already used&#x27;)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Coupon/Promo Code Reuse Not Restricted Per User</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/management/commands/seed_data.py:157</div>
+                <p style="margin:0.75rem 0">Coupon or promo code usage does not appear to track per-user redemption. Without per-user tracking, codes can be reused indefinitely by the same user.</p>
+                <pre>&#x27;code&#x27;: &#x27;ADMIN100&#x27;, &#x27;discount_type&#x27;: &#x27;pct&#x27;, &#x27;discount_value&#x27;: Decimal(&#x27;100&#x27;),</pre>
+                <div class="meta">
+                  <span>ID: f27510a3</span>
+                  <span>CWE-837</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Track coupon usage per user </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use unique_together constraint to enforce one-per-user coupon usage.</p>
+                  <pre># Model to track coupon usage:
+class CouponUsage(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (&#x27;coupon&#x27;, &#x27;user&#x27;)  # One use per user
+
+# Check before applying:
+if CouponUsage.objects.filter(coupon=coupon, user=request.user).exists():
+    raise ValidationError(&#x27;Coupon already used&#x27;)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Coupon/Promo Code Reuse Not Restricted Per User</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/management/commands/seed_data.py:163</div>
+                <p style="margin:0.75rem 0">Coupon or promo code usage does not appear to track per-user redemption. Without per-user tracking, codes can be reused indefinitely by the same user.</p>
+                <pre>for cp in coupons:</pre>
+                <div class="meta">
+                  <span>ID: bfcd60f1</span>
+                  <span>CWE-837</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Track coupon usage per user </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use unique_together constraint to enforce one-per-user coupon usage.</p>
+                  <pre># Model to track coupon usage:
+class CouponUsage(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (&#x27;coupon&#x27;, &#x27;user&#x27;)  # One use per user
+
+# Check before applying:
+if CouponUsage.objects.filter(coupon=coupon, user=request.user).exists():
+    raise ValidationError(&#x27;Coupon already used&#x27;)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Coupon/Promo Code Reuse Not Restricted Per User</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/management/commands/seed_data.py:164</div>
+                <p style="margin:0.75rem 0">Coupon or promo code usage does not appear to track per-user redemption. Without per-user tracking, codes can be reused indefinitely by the same user.</p>
+                <pre>Coupon.objects.get_or_create(code=cp[&#x27;code&#x27;], defaults=cp)</pre>
+                <div class="meta">
+                  <span>ID: 1ea8320d</span>
+                  <span>CWE-837</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Track coupon usage per user </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use unique_together constraint to enforce one-per-user coupon usage.</p>
+                  <pre># Model to track coupon usage:
+class CouponUsage(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (&#x27;coupon&#x27;, &#x27;user&#x27;)  # One use per user
+
+# Check before applying:
+if CouponUsage.objects.filter(coupon=coupon, user=request.user).exists():
+    raise ValidationError(&#x27;Coupon already used&#x27;)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-MEDIUM">MEDIUM</span>
+                <span class="vuln-title">Coupon/Promo Code Reuse Not Restricted Per User</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 app/management/commands/seed_data.py:165</div>
+                <p style="margin:0.75rem 0">Coupon or promo code usage does not appear to track per-user redemption. Without per-user tracking, codes can be reused indefinitely by the same user.</p>
+                <pre>self.stdout.write(&#x27;  ✓ Coupons seeded (including ADMIN100 = 100% off — logic vuln)&#x27;)</pre>
+                <div class="meta">
+                  <span>ID: 7cfb4de7</span>
+                  <span>CWE-837</span>
+                  <span>A04:2021 – Insecure Design</span>
+                  <span>Business Logic Vulnerability</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Track coupon usage per user </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Use unique_together constraint to enforce one-per-user coupon usage.</p>
+                  <pre># Model to track coupon usage:
+class CouponUsage(models.Model):
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (&#x27;coupon&#x27;, &#x27;user&#x27;)  # One use per user
+
+# Check before applying:
+if CouponUsage.objects.filter(coupon=coupon, user=request.user).exists():
+    raise ValidationError(&#x27;Coupon already used&#x27;)</pre>
+                  <p style="color:#d29922">⚠️ Requires manual review</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vuln">
+              <div class="vuln-header">
+                <span class="badge badge-LOW">LOW</span>
+                <span class="vuln-title">X-Content-Type-Options Header Not Sent</span>
+              </div>
+              <div class="vuln-body">
+                <div class="location">📍 vulnshop/settings.py:135</div>
+                <p style="margin:0.75rem 0">Without X-Content-Type-Options: nosniff, browsers may MIME-sniff responses, potentially executing uploaded files as scripts.</p>
+                <pre>SECURE_CONTENT_TYPE_NOSNIFF = False</pre>
+                <div class="meta">
+                  <span>ID: 86e50654</span>
+                  <span>CWE-16</span>
+                  <span>A05:2021 – Security Misconfiguration</span>
+                  <span>Security Misconfiguration</span>
+                </div>
+                
+                <div class="fix-block">
+                  <h4>💊 Fix: Replace insecure setting </h4>
+                  <p style="font-size:0.85rem;color:#8b949e">Change SECURE_CONTENT_TYPE_NOSNIFF = False to SECURE_CONTENT_TYPE_NOSNIFF = True</p>
+                  <pre>SECURE_CONTENT_TYPE_NOSNIFF = True</pre>
+                  
+                </div>
+              </div>
+            </div>
+
+  <footer>DjangoSentinel v1.0.0 — Enterprise Security for Python/Django</footer>
+</div>
+</body>
+</html>

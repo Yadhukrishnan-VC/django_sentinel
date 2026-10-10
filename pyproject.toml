@@ -1,0 +1,72 @@
+[build-system]
+requires = ["setuptools>=65", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "django-sentinel"
+version = "1.0.0"
+description = "Enterprise AI Security Assistant for Python/Django — Finds and Fixes Vulnerabilities Before Production"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "DjangoSentinel Contributors" }]
+requires-python = ">=3.8"
+keywords = ["django", "security", "vulnerability", "scanner", "SAST", "DevSecOps"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Topic :: Security",
+    "Topic :: Software Development :: Quality Assurance",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Framework :: Django",
+]
+dependencies = [
+    "packaging>=21.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "black>=23.0",
+    "ruff>=0.1.0",
+]
+
+[project.scripts]
+sentinel = "djangosentinel.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/yourusername/django-sentinel"
+Documentation = "https://github.com/yourusername/django-sentinel#readme"
+Issues = "https://github.com/yourusername/django-sentinel/issues"
+
+[tool.setuptools.packages.find]
+include = ["djangosentinel*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+[tool.black]
+line-length = 100
+target-version = ["py38", "py39", "py310", "py311"]
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]
+
+[tool.coverage.run]
+source = ["djangosentinel"]
+omit = ["tests/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
