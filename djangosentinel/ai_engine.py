@@ -1,10 +1,10 @@
 """
-AI-Powered Analysis Engine — DjangoSentinel
+AI-Powered Analysis Engine - DjangoSentinel
 ============================================
 Uses Claude (claude-sonnet-4-20250514) for:
 1. Complex multi-line fixes that pattern matching can't generate
 2. Deep "why is this risky" explanations with project context
-3. Edge case detection — unknown patterns LLM can reason about
+3. Edge case detection - unknown patterns LLM can reason about
 4. PR review summaries for GitHub integration
 
 Rule engine handles:
@@ -28,15 +28,19 @@ from typing import Optional, List, Dict, Any, Tuple
 from djangosentinel.models import (
     Vulnerability, VulnCategory, Severity, CodeLocation, Fix, ScanResult
 )
+from djangosentinel.ai_model_providers import (
+    ai_generate,
+    get_ai_provider,
+    is_ai_available,
+    set_ai_provider,
+)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Anthropic API client (no SDK dependency — pure HTTP)
-# ─────────────────────────────────────────────────────────────────────────────
-
-ANTHROPIC_MODEL = "claude-sonnet-4-20250514"
-ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
-
+# ---------------------------------------------------------------------------
+# Backward-compatible wrapper: delegates to the current default provider.
+# By default the provider is Anthropic, so existing code continues to work
+# without any changes.
+# ---------------------------------------------------------------------------
 
 def _call_claude(
     system: str,
@@ -45,42 +49,8 @@ def _call_claude(
     api_key: Optional[str] = None,
     timeout: int = 30,
 ) -> Optional[str]:
-    """
-    Call Claude API and return the text response.
-    Returns None if API key is missing or request fails.
-    """
-    try:
-        import urllib.request
-        import urllib.error
-
-        key = api_key or os.environ.get("ANTHROPIC_API_KEY", "")
-        if not key:
-            return None
-
-        payload = json.dumps({
-            "model": ANTHROPIC_MODEL,
-            "max_tokens": max_tokens,
-            "system": system,
-            "messages": [{"role": "user", "content": user}],
-        }).encode("utf-8")
-
-        req = urllib.request.Request(
-            ANTHROPIC_API_URL,
-            data=payload,
-            headers={
-                "Content-Type": "application/json",
-                "x-api-key": key,
-                "anthropic-version": "2023-06-01",
-            },
-            method="POST",
-        )
-
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            return data["content"][0]["text"]
-
-    except Exception:
-        return None
+    """Call the default AI provider and return the response text."""
+    return ai_generate(system, user, max_tokens, timeout)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -90,7 +60,7 @@ def _call_claude(
 class AIFixEngine:
     """
     Generates AI-powered fixes for vulnerabilities that rule-based
-    fixers cannot handle — multi-line changes, refactoring, context-dependent.
+    fixers cannot handle - multi-line changes, refactoring, context-dependent.
     """
 
     SYSTEM_PROMPT = """You are DjangoSentinel's AI security fix engine.
@@ -98,9 +68,9 @@ class AIFixEngine:
 Your job is to generate precise, minimal, production-safe code fixes for
 Python/Django security vulnerabilities. You must:
 
-1. Output ONLY valid Python code — no markdown fences, no prose, no comments
+1. Output ONLY valid Python code - no markdown fences, no prose, no comments
     unless comments are part of the fix itself
-2. Keep changes minimal — fix the vulnerability, change nothing else
+2. Keep changes minimal - fix the vulnerability, change nothing else
 3. Preserve the original code's indentation and style exactly
 4. When you cannot generate a safe fix, output exactly: MANUAL_REVIEW_REQUIRED
 
@@ -135,11 +105,10 @@ race conditions, authentication patterns, and common Django anti-patterns."""
             return self._build_fix(cached, vuln)
 
         prompt = self._build_prompt(vuln, file_context)
-        response = _call_claude(
+        response = ai_generate(
             system=self.SYSTEM_PROMPT,
             user=prompt,
             max_tokens=900,
-            api_key=self.api_key,
         )
 
         if not response:
@@ -217,16 +186,21 @@ class AIExplainer:
     SYSTEM_PROMPT = """You are a senior Django security engineer explaining vulnerabilities to developers.
 
 Rules:
-- Be direct and specific — reference the actual code, not generic descriptions
+- Be direct and specific - reference the actual code, not generic descriptions
 - Explain the real-world attack scenario in 2-3 sentences
-- Avoid jargon — if you use a term, explain it immediately
+- Avoid jargon - if you use a term, explain it immediately
 - End with one concrete, actionable fix hint
 - Maximum 150 words total
-- Never use bullet points — write in flowing prose"""
+- Never use bullet points - write in flowing prose"""
 
     def __init__(self, api_key: Optional[str] = None):
-        self.api_key = api_key or os.environ.get("ANTHROPIC_API_KEY", "")
-        self.available = bool(self.api_key)
+        if api_key:
+            from djangosentinel.ai_model_providers import AnthropicProvider
+            self._provider = AnthropicProvider()
+            self._provider.api_key = api_key
+        else:
+            self._provider = get_ai_provider()
+        self.available = self._provider.available
         self._cache: Dict[str, str] = {}
 
     def explain(self, vuln: Vulnerability, code_context: str = "") -> Optional[str]:
@@ -252,11 +226,10 @@ CWE: {vuln.cwe_id}
 Write a developer-friendly explanation of WHY this specific code is dangerous
 and what an attacker could do with it."""
 
-        response = _call_claude(
+        response = ai_generate(
             system=self.SYSTEM_PROMPT,
             user=prompt,
             max_tokens=250,
-            api_key=self.api_key,
         )
 
         if response:
@@ -272,17 +245,54 @@ and what an attacker could do with it."""
 class AIPatternScanner:
     """
     Submits code snippets to Claude for reasoning about security issues
-    that rule-based patterns cannot catch — novel patterns, complex logic,
+    that rule-based patterns cannot catch - novel patterns, complex logic,
     project-specific anti-patterns.
 
     Only runs on files that rule scanners flagged OR on files the user
     explicitly requests deep analysis for (--ai-deep flag).
     """
 
-    SYSTEM_PROMPT = """You are a Django security code reviewer.
+    def __init__(self, api_key: Optional[str] = None):
+        if api_key:
+            from djangosentinel.ai_model_providers import AnthropicProvider
+            self._provider = AnthropicProvider()
+            self._provider.api_key = api_key
+        else:
+            self._provider = get_ai_provider()
+        self.available = self._provider.available
 
-Analyze the provided Python/Django code for security vulnerabilities that
-static analysis tools typically miss. Focus on:
+    def scan_file(self, file_path: str, source: str) -> List[Vulnerability]:
+        """
+        Ask the default AI provider to reason about security issues in the given source code.
+        Returns a list of Vulnerability objects.
+        """
+        if not self.available or not source.strip():
+            return []
+
+        # Skip files that are clearly not security-relevant
+        if self._is_boring_file(file_path, source):
+            return []
+
+        prompt = f"""Review this Django file for security vulnerabilities:
+
+File: {file_path}
+```python
+{source[:4000]}
+```
+
+Find vulnerabilities that static analysis tools miss - focus on logic flaws,
+missing auth checks, race conditions, and insecure data flows."""
+
+        response = ai_generate(
+            system=self.SYSTEM_PROMPT,
+            user=prompt,
+            max_tokens=1200,
+        )
+
+        if not response:
+            return []
+
+        return self._parse_response(response, file_path)c analysis tools typically miss. Focus on:
 - Business logic flaws (race conditions, missing authorization)
 - Novel injection patterns
 - Insecure data flows
@@ -329,7 +339,7 @@ File: {file_path}
 {source[:4000]}
 ```
 
-Find vulnerabilities that static analysis tools miss — focus on logic flaws,
+Find vulnerabilities that static analysis tools miss - focus on logic flaws,
 missing auth checks, race conditions, and insecure data flows."""
 
         response = _call_claude(
@@ -389,7 +399,7 @@ missing auth checks, race conditions, and insecure data flows."""
                     location=CodeLocation(
                         file_path=file_path,
                         line_number=item.get("line_hint", 1),
-                        snippet="(AI-detected — see description)",
+                        snippet="(AI-detected - see description)",
                     ),
                     description=item.get("description", ""),
                     owasp_ref="A04:2021 – Insecure Design",
@@ -424,8 +434,8 @@ class PRReviewSummarizer:
 
 Format your response as clean GitHub Markdown suitable for a PR comment.
 Be concise, developer-friendly, and actionable.
-Use emojis sparingly — only 🔴🟠🟡🔵 for severity, ✅ for fixed, ⚠️ for warnings.
-Never be alarmist — be collegial, like a senior developer reviewing a colleague's PR."""
+Use emojis sparingly - only 🔴🟠🟡🔵 for severity, ✅ for fixed, ⚠️ for warnings.
+Never be alarmist - be collegial, like a senior developer reviewing a colleague's PR."""
 
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or os.environ.get("ANTHROPIC_API_KEY", "")
@@ -487,7 +497,7 @@ Write a PR review comment. Include:
         header = "## 🛡️ DjangoSentinel Security Review\n\n"
         footer = (
             f"\n\n---\n"
-            f"*DjangoSentinel v1.0.0 — "
+            f"*DjangoSentinel v1.0.0 - "
             f"Scanned {summary['files_scanned']} files in "
             f"{summary['duration_seconds']:.1f}s*"
         )
@@ -504,11 +514,11 @@ Write a PR review comment. Include:
         if total == 0:
             status = "✅ **No vulnerabilities found.** This PR is safe to merge."
         elif bsev["critical"] > 0:
-            status = f"🔴 **BLOCKED** — {bsev['critical']} critical issue(s) must be fixed before merge."
+            status = f"🔴 **BLOCKED** - {bsev['critical']} critical issue(s) must be fixed before merge."
         elif bsev["high"] > 0:
-            status = f"🟠 **Needs Work** — {bsev['high']} high-severity issue(s) found."
+            status = f"🟠 **Needs Work** - {bsev['high']} high-severity issue(s) found."
         else:
-            status = f"🟡 **Review Suggested** — {total} low/medium issue(s) found."
+            status = f"🟡 **Review Suggested** - {total} low/medium issue(s) found."
 
         lines = [
             "## 🛡️ DjangoSentinel Security Review\n",
@@ -528,10 +538,10 @@ Write a PR review comment. Include:
                             key=lambda x: ["CRITICAL", "HIGH", "MEDIUM", "LOW"].index(x.severity.value)):
                 icon = {"CRITICAL": "🔴", "HIGH": "🟠", "MEDIUM": "🟡", "LOW": "🔵"}.get(v.severity.value, "⚪")
                 fixed = " ✅" if v.fix and v.fix.applied else ""
-                lines.append(f"- {icon} **{v.title}**{fixed} — `{v.location.file_path}:{v.location.line_number}`")
+                lines.append(f"- {icon} **{v.title}**{fixed} - `{v.location.file_path}:{v.location.line_number}`")
                 lines.append(f"  > {v.description[:120]}")
 
-        lines.append(f"\n---\n*DjangoSentinel v1.0.0 — {s['files_scanned']} files · {s['duration_seconds']:.1f}s*")
+        lines.append(f"\n---\n*DjangoSentinel v1.0.0 - {s['files_scanned']} files · {s['duration_seconds']:.1f}s*")
         return "\n".join(lines)
 
     def post_to_github(

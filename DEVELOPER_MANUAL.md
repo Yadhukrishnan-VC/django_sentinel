@@ -394,6 +394,67 @@ class TestMyScanner(TempDirMixin, unittest.TestCase):
 
 ---
 
+
+
+## AI Model Provider Abstraction
+
+DjangoSentinel uses a model provider abstraction layer defined in `djangosentinel.ai_model_providers`. This layer provides a uniform interface over multiple LLM providers while maintaining full backward compatibility.
+
+### Provider Classes:
+
+- `AnthropicProvider` — wraps Anthropic Claude API
+- `OpenAIProvider` — wraps OpenAI GPT API
+- `GeminiProvider` — wraps Google Gemini API
+
+### Base Class: `AIModelProvider`
+
+Each provider implements:
+- `_get_api_key()` — retrieves API key from environment
+- `_call_api(system, user, max_tokens, timeout)` — makes the API call
+- `generate(system, user, max_tokens, timeout)` — public entry point
+
+### Global Provider Management:
+
+- `get_ai_provider()` — returns the current default provider
+- `set_ai_provider(provider)` — sets a new default provider
+- `is_ai_available()` — checks if the current provider has an API key
+
+### Default Behavior:
+
+The default provider is `AnthropicProvider`, which preserves full backward compatibility.
+Existing code using `_call_claude`, `AIFixEngine`, `AIExplainer`, etc. continues to work
+without any modifications.
+
+### Adding a New Provider:
+
+To add support for a new LLM provider:
+
+1. Create a class that inherits from `AIModelProvider`
+2. Implement `_get_api_key()` to read the appropriate environment variable
+3. Implement `_call_api()` with the provider's HTTP API details
+4. Optionally register the provider or make it selectable via `set_ai_provider()`
+
+### Example: Custom Provider
+
+```python
+from djangosentinel.ai_model_providers import AIModelProvider
+
+class CustomProvider(AIModelProvider):
+    def _get_api_key(self):
+        return os.environ.get("CUSTOM_API_KEY", "")
+    
+    def _call_api(self, system, user, max_tokens, timeout):
+        # Custom API call implementation
+        pass
+```
+
+### CLI Integration:
+
+All CLI commands that use AI (`--ai`, `--ai-deep`, `--ai-explain`) respect the
+currently set provider. No code changes are needed to support multiple providers
+— just set the appropriate environment variable.
+
+
 ## Contributing
 
 1. Fork the repository
