@@ -1,0 +1,109 @@
+# .sentinel.yml — DjangoSentinel project configuration
+# Place this file at the root of your Django project.
+# All settings are optional. DjangoSentinel works without this file.
+
+# ─── Scanner settings ────────────────────────────────────────────────────────
+scan:
+  # Directories to exclude from scanning (added to defaults)
+  exclude_dirs:
+    - "venv"
+    - ".venv"
+    - "node_modules"
+    - "__pycache__"
+    - ".git"
+    - "migrations"
+    # Add your project-specific exclusions:
+    # - "legacy"
+    # - "third_party"
+
+  # File patterns to exclude
+  exclude_patterns:
+    - "*/tests/*"
+    - "*/test_*.py"
+    - "*_test.py"
+    - "conftest.py"
+
+  # Which scanners to enable (all enabled by default)
+  scanners:
+    django: true           # Settings, views, templates, secrets
+    ast: true              # Structural analysis (CBV auth, timing attacks...)
+    business_logic: true   # Race conditions, financial ops, workflow bypass
+    dependencies: true     # CVE database check on requirements files
+
+# ─── AI engine settings ──────────────────────────────────────────────────────
+ai:
+  # Enable AI-assisted fixes and explanations
+  # Requires ANTHROPIC_API_KEY environment variable
+  enabled: false           # true = always use AI; false = only with --ai flag
+
+  # Run AI pattern scanner on every file (slower, catches unknown patterns)
+  deep_scan: false         # true = always; false = only with --ai-deep flag
+
+  # Add AI explanations to terminal output
+  explain: false           # true = always; false = only with --ai-explain flag
+
+  # Maximum files to deep-scan with AI per run (controls API cost)
+  max_deep_scan_files: 20
+
+# ─── Fix settings ─────────────────────────────────────────────────────────────
+fix:
+  # Always create backups before modifying files
+  backup: true
+
+  # Backup directory (relative to project root)
+  backup_dir: ".sentinel_backups"
+
+  # Auto-fix findings up to this severity (critical, high, medium, low)
+  # Findings above this level require --ai or manual review
+  auto_fix_level: "high"
+
+# ─── CI / build gate settings ────────────────────────────────────────────────
+ci:
+  # Fail (exit 1) if any unfixed vulnerability at this level or above is found
+  # Options: critical, high, medium, low
+  # Tip: start with "critical" and tighten over time
+  fail_on: "critical"
+
+  # Output format when running in CI
+  format: "terminal"       # terminal | json | html | sarif
+
+  # Also save a SARIF file (enables GitHub Code Scanning integration)
+  sarif_output: "sentinel-results.sarif"
+
+# ─── GitHub PR integration ────────────────────────────────────────────────────
+github:
+  # Post a summary comment on PR (needs GITHUB_TOKEN)
+  pr_comment: false
+
+  # Post inline code annotations on the PR diff
+  pr_inline: false
+
+  # Create a GitHub Check Run (shows pass/fail on the PR)
+  pr_check: false
+
+  # Use AI to generate the PR summary comment
+  ai_pr_summary: false
+
+# ─── Git hooks settings ──────────────────────────────────────────────────────
+hooks:
+  # pre-commit: which severity blocks the commit
+  pre_commit_fail_on: "critical"
+
+  # pre-push: which severity blocks the push
+  pre_push_fail_on: "high"
+
+# ─── Suppression / ignore list ───────────────────────────────────────────────
+# Format: list of {file, line, title_contains} objects
+# Use sparingly — document WHY each suppression is safe
+ignore:
+  []
+  # Example:
+  # - file: "webhooks/views.py"
+  #   line: 28
+  #   title_contains: "CSRF Protection Explicitly Disabled"
+  #   reason: "This endpoint uses HMAC webhook signature verification"
+  #
+  # - file: "myapp/views.py"
+  #   line: 142
+  #   title_contains: "Open Redirect"
+  #   reason: "URL is validated against our internal allowlist before redirect"

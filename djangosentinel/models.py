@@ -83,6 +83,31 @@ class Vulnerability:
     references: List[str] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
 
+    @property
+    def confidence(self) -> Optional[float]:
+        """Confidence score (0.0-1.0). Set by apply_confidence_scores()."""
+        return self.metadata.get("confidence")
+
+    @property
+    def confidence_label(self) -> str:
+        """Human-readable confidence label: HIGH / MEDIUM / LOW / UNCERTAIN."""
+        return self.metadata.get("confidence_label", "UNCERTAIN")
+
+    @property
+    def is_taint_detected(self) -> bool:
+        """True if this finding was confirmed by data-flow taint analysis."""
+        return self.metadata.get("source") == "taint_tracker"
+
+    @property
+    def is_ai_detected(self) -> bool:
+        """True if this finding was detected by the AI pattern scanner."""
+        return self.metadata.get("source") == "ai_pattern_scanner"
+
+    @property
+    def is_ast_detected(self) -> bool:
+        """True if this finding was detected by AST structural analysis."""
+        return bool(self.metadata.get("ast_detected")) or self.metadata.get("source") == "ast_scanner"
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "id": self.vuln_id,

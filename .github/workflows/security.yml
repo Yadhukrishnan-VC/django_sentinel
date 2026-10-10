@@ -1,117 +1,171 @@
-name: DjangoSentinel CI
+name: DjangoSentinel Security
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop, master]
   pull_request:
-    branches: [ main ]
+    branches: [main, develop, master]
+
+permissions:
+  security-events: write   # Upload SARIF to Code Scanning
+  pull-requests: write     # Post PR review comments
+  checks: write            # Create Check Runs
+  contents: read
 
 jobs:
+  # ── Job 1: Full security scan with PR integration ─────────────────────────
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
-    permissions:
-      security-events: write
-      actions: read
-      contents: read
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-        cache: 'pip'
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+          cache: pip
 
-    - name: Install DjangoSentinel
-      run: pip install -e .
+      - name: Install DjangoSentinel
+        run: pip install django-sentinel
 
-    - name: Run Security Scan (SARIF output)
-      run: |
-        sentinel scan . \
-          --format sarif \
-          --skip-deps \
-          -o results.sarif
-      continue-on-error: true
+      # Run scan — SARIF output for Code Scanning
+      - name: Run security scan (SARIF)
+        run: |
+          sentinel scan . \
+            --format sarif \
+            -o sentinel-results.sarif \
+            --no-color
+        continue-on-error: true
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
-    - name: Upload SARIF to GitHub Code Scanning
-      uses: github/codeql-action/upload-sarif@v3
-      if: always()
-      with:
-        sarif_file: results.sarif
-        category: django-sentinel
+      # Upload SARIF → appears inline in PR diffs + Security tab
+      - name: Upload SARIF to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: sentinel-results.sarif
+          category: django-sentinel
 
-    - name: Run Security Scan (Terminal — fail on critical)
-      run: |
-        sentinel scan . \
-          --fail-on critical \
-          --no-color
+      # Post AI-powered PR comment (PRs only)
+      - name: Post PR security review comment
+        if: github.event_name == 'pull_request'
+        run: |
+          sentinel scan . \
+            --pr-comment \
+            --pr-inline \
+            --pr-check \
+            --ai \
+            --no-color
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        continue-on-error: true
 
-    - name: Generate HTML Report
-      run: |
-        sentinel scan . \
-          --format html \
-          -o security-report.html \
-          --no-color
-      continue-on-error: true
+      # Generate HTML report as artifact
+      - name: Generate HTML report
+        run: |
+          sentinel scan . \
+            --format html \
+            -o sentinel-report.html \
+            --no-color
+        continue-on-error: true
 
-    - name: Upload HTML Report
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: security-report
-        path: security-report.html
-        retention-days: 30
+      - name: Upload HTML report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-report-${{ github.run_number }}
+          path: sentinel-report.html
+          retention-days: 30
 
+      # Hard gate — fail CI on CRITICAL findings
+      - name: Fail on CRITICAL vulnerabilities
+        run: |
+          sentinel scan . \
+            --fail-on critical \
+            --skip-deps \
+            --no-color
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+  # ── Job 2: Unit tests across Python versions ──────────────────────────────
   test:
-    name: Unit Tests
+    name: Unit Tests (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -e ".[dev]"
+      - run: python tests/test_all.py
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
+  # ── Job 3: AI-enhanced deep scan (main branch only) ───────────────────────
+  ai-deep-scan:
+    name: AI Deep Scan
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
 
-    - name: Install dependencies
-      run: |
-        pip install -e ".[dev]"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - run: pip install django-sentinel
 
-    - name: Run tests
-      run: python tests/test_all.py
+      - name: AI deep scan
+        run: |
+          sentinel scan . \
+            --ai \
+            --ai-deep \
+            --format json \
+            -o ai-deep-scan.json \
+            --no-color
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        continue-on-error: true
 
+      - name: Upload AI scan results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ai-deep-scan-${{ github.run_number }}
+          path: ai-deep-scan.json
+          retention-days: 7
+
+  # ── Job 4: Dependency CVE check ───────────────────────────────────────────
   dependency-check:
-    name: Dependency Vulnerability Check
+    name: Dependency CVE Check
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - run: pip install django-sentinel
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
+      - name: Scan dependencies
+        run: |
+          sentinel scan . \
+            --skip-logic \
+            --skip-ast \
+            --format json \
+            -o dependency-report.json \
+            --no-color
+        continue-on-error: true
 
-    - name: Install DjangoSentinel
-      run: pip install -e .
-
-    - name: Scan Dependencies Only
-      run: |
-        sentinel scan . \
-          --skip-logic \
-          --format json \
-          -o dependency-report.json
-
-    - name: Upload Dependency Report
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: dependency-report
-        path: dependency-report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-report-${{ github.run_number }}
+          path: dependency-report.json
+          retention-days: 14

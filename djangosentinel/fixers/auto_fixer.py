@@ -81,53 +81,14 @@ class AutoFixer:
                 shutil.copy2(src, dst)
 
     def _apply_fix(self, vuln: Vulnerability) -> bool:
-        """Apply a single fix to the file."""
-        fix = vuln.fix
-        file_path = self.project_path / vuln.location.file_path
-
-        if not file_path.exists():
-            return False
-
-        try:
-            source = file_path.read_text(encoding="utf-8", errors="ignore")
-
-            if fix.original_code not in source:
-                # Try line-based replacement
-                return self._apply_line_fix(file_path, vuln)
-
-            new_source = source.replace(fix.original_code, fix.fixed_code, 1)
-
-            if not self.dry_run:
-                file_path.write_text(new_source, encoding="utf-8")
-
-            return True
-
-        except Exception as e:
-            return False
-
-    def _apply_line_fix(self, file_path: Path, vuln: Vulnerability) -> bool:
-        """Apply fix at specific line number."""
-        try:
-            lines = file_path.read_text(encoding="utf-8", errors="ignore").splitlines(keepends=True)
-            line_idx = vuln.location.line_number - 1
-
-            if line_idx >= len(lines):
-                return False
-
-            original_line = lines[line_idx]
-            fix = vuln.fix
-
-            # Try simple in-line replacement
-            if fix.original_code in original_line:
-                lines[line_idx] = original_line.replace(fix.original_code, fix.fixed_code)
-                if not self.dry_run:
-                    file_path.write_text("".join(lines), encoding="utf-8")
-                return True
-
-            return False
-
-        except Exception:
-            return False
+        """Apply a single fix using AST-safe indentation-preserving method."""
+        from djangosentinel.fixers.ast_safe_fixer import ASTSafeFixer
+        ast_fixer = ASTSafeFixer(
+            str(self.project_path),
+            dry_run=self.dry_run,
+            backup=self.backup,
+        )
+        return ast_fixer.apply_fix(vuln)
 
     def generate_fix_report(self) -> str:
         """Generate a human-readable fix report."""

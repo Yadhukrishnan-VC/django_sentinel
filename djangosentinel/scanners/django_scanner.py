@@ -312,7 +312,7 @@ class DjangoScanner:
                         description="Use parameterized queries",
                         original_code=line.strip(),
                         fixed_code="# Use Django ORM: Model.objects.filter(field=value)\n"
-                                   "# Or parameterized: cursor.execute('SELECT ... WHERE id=%s', [user_id])",
+                                    "# Or parameterized: cursor.execute('SELECT ... WHERE id=%s', [user_id])",
                         explanation="Never interpolate user input directly into SQL strings.",
                         manual_review_required=True,
                     ),
@@ -428,7 +428,7 @@ class DjangoScanner:
 
             # Detect IDOR - accessing objects without ownership check
             if re.search(r'get\(pk\s*=\s*request\.(GET|POST)\[', line) or \
-               re.search(r'get\(id\s*=\s*request\.(GET|POST)\[', line):
+                re.search(r'get\(id\s*=\s*request\.(GET|POST)\[', line):
                 self.vulnerabilities.append(Vulnerability(
                     vuln_id=str(uuid.uuid4())[:8],
                     title="Potential IDOR – Object Lookup Without Authorization",
@@ -587,17 +587,17 @@ class DjangoScanner:
         """Detect use of dangerous Python/Django functions."""
         dangerous = [
             (r'\beval\s*\(', "Use of eval()", Severity.CRITICAL, "CWE-78",
-             "eval() executes arbitrary Python code. Replace with safe alternatives."),
+            "eval() executes arbitrary Python code. Replace with safe alternatives."),
             (r'\bexec\s*\(', "Use of exec()", Severity.CRITICAL, "CWE-78",
-             "exec() executes arbitrary Python code. Never use with user input."),
+            "exec() executes arbitrary Python code. Never use with user input."),
             (r'\bpickle\.loads\s*\(', "Unsafe Deserialization via pickle", Severity.CRITICAL, "CWE-502",
-             "pickle.loads() can execute arbitrary code when deserializing untrusted data."),
+            "pickle.loads() can execute arbitrary code when deserializing untrusted data."),
             (r'\byaml\.load\s*\((?!.*Loader)', "Unsafe YAML Deserialization", Severity.HIGH, "CWE-502",
-             "yaml.load() without Loader=yaml.SafeLoader can execute arbitrary code."),
+            "yaml.load() without Loader=yaml.SafeLoader can execute arbitrary code."),
             (r'\bos\.system\s*\(', "OS Command Execution via os.system()", Severity.HIGH, "CWE-78",
-             "os.system() is vulnerable to command injection. Use subprocess with shell=False."),
+            "os.system() is vulnerable to command injection. Use subprocess with shell=False."),
             (r'mark_safe\(.*request\.(GET|POST)', "XSS via mark_safe with User Input", Severity.CRITICAL, "CWE-79",
-             "mark_safe() with user-controlled data bypasses Django's auto-escaping, causing XSS."),
+            "mark_safe() with user-controlled data bypasses Django's auto-escaping, causing XSS."),
         ]
         lines = source.splitlines()
         for i, line in enumerate(lines, 1):

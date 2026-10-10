@@ -46,10 +46,11 @@ def main():
     try:
         result = subprocess.run(
             [sys.executable, "-m", "djangosentinel.cli", "scan",
-             str(project_root),
-             "--format", "terminal",
-             "--fail-on", "critical",
-             "--staged-only", *staged],
+            str(project_root),
+            "--diff",
+            "--staged",
+            "--format", "terminal",
+            "--fail-on", "critical"],
             capture_output=False,
         )
 
@@ -92,9 +93,10 @@ def main():
     try:
         result = subprocess.run(
             [sys.executable, "-m", "djangosentinel.cli", "scan",
-             str(project_root),
-             "--format", "terminal",
-             "--fail-on", "high"],
+            str(project_root),
+            "--diff",
+            "--format", "terminal",
+            "--fail-on", "high"],
             capture_output=False,
         )
 

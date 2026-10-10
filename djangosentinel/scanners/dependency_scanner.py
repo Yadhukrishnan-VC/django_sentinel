@@ -201,6 +201,7 @@ DANGEROUS_PACKAGES = {
     "shelve": "Shelve uses pickle internally and is unsafe with untrusted data.",
     "xml.etree.ElementTree": "xml.etree.ElementTree is vulnerable to XML bomb attacks. Use defusedxml.",
     "xmlrpc": "XML-RPC is prone to XXE and SSRF. Consider REST/JSON APIs.",
+    "yaml": "yaml.load() without SafeLoader allows arbitrary code execution. Use yaml.safe_load() instead.",
 }
 
 

@@ -12,7 +12,7 @@ Detects flaws in application logic that security tools typically miss:
 import re
 import ast
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 import uuid
 
 from djangosentinel.models import (
@@ -46,6 +46,7 @@ class BusinessLogicScanner:
                 self._scan_coupon_abuse(source, rel_path)
                 self._scan_pagination_disclosure(source, rel_path)
                 self._scan_time_based_logic(source, rel_path)
+                self._scan_idor_ast(source, rel_path)   # AST-based IDOR
             except Exception:
                 continue
         return self.vulnerabilities
@@ -410,3 +411,114 @@ class BusinessLogicScanner:
                         explanation="Always use timezone.now() in Django for consistent timezone-aware datetimes.",
                     ),
                 ))
+
+    def _scan_idor_ast(self, source: str, file_path: str):
+        """
+        AST-based IDOR detection.
+
+        Detects:  queryset.filter(id=X) or .get(id=X) or .get(pk=X)
+                without a corresponding user= / owner= / created_by= filter.
+
+        This is FAR more accurate than regex because we actually parse
+        the keyword arguments to filter()/get() calls.
+        """
+        try:
+            tree = ast.parse(source)
+        except SyntaxError:
+            return
+
+        lines = source.splitlines()
+
+        class IDORVisitor(ast.NodeVisitor):
+            def __init__(self_inner):
+                self_inner.findings = []
+
+            def visit_Call(self_inner, node: ast.Call):
+                self_inner.generic_visit(node)
+                # Detect .filter(...) and .get(...) calls
+                func = node.func
+                if not isinstance(func, ast.Attribute):
+                    return
+                if func.attr not in ("filter", "get", "exclude"):
+                    return
+
+                # Extract keyword argument names
+                kwargs = {kw.arg: kw for kw in node.keywords if kw.arg}
+
+                # ID-like args: id, pk, uuid, slug
+                id_args = {"id", "pk", "uuid", "slug", "token"}
+                has_id_filter = bool(kwargs.keys() & id_args)
+
+                # Ownership args — if any of these present, IDOR is mitigated
+                owner_args = {
+                    "user", "user_id", "owner", "owner_id",
+                    "author", "author_id", "created_by", "created_by_id",
+                    "account", "account_id", "member", "member_id",
+                }
+                has_owner_filter = bool(kwargs.keys() & owner_args)
+
+                if not has_id_filter or has_owner_filter:
+                    return
+
+                # Check if the id value comes from user input
+                id_kw = next((kwargs[k] for k in id_args if k in kwargs), None)
+                if id_kw is None:
+                    return
+
+                value_repr = ast.unparse(id_kw.value) if hasattr(ast, "unparse") else ""
+                user_input_signals = [
+                    "request.GET", "request.POST", "request.data",
+                    "kwargs", "args", "pk",
+                ]
+                is_user_controlled = any(sig in value_repr for sig in user_input_signals)
+
+                # Also flag URL kwargs (pk=pk from URL)
+                if isinstance(id_kw.value, ast.Name) and id_kw.value.id in ("pk", "id", "slug"):
+                    is_user_controlled = True
+
+                if is_user_controlled:
+                    self_inner.findings.append((node.lineno, value_repr))
+
+        visitor = IDORVisitor()
+        visitor.visit(tree)
+
+        for lineno, value_repr in visitor.findings:
+            snippet = lines[lineno - 1].strip() if 0 < lineno <= len(lines) else ""
+
+            # Determine fix based on context
+            context_src = "\n".join(lines[max(0, lineno - 5): lineno + 5])
+            is_cbv = "class " in context_src or "self.request" in context_src or "get_queryset" in context_src or "self," in context_src
+            if is_cbv:
+                fix_code = (
+                    "# Filter by current user to prevent IDOR (CBV):\n"
+                    "queryset = queryset.filter(user=self.request.user)"
+                )
+            else:
+                fix_code = (
+                    "# Filter by current user to prevent IDOR:\n"
+                    "obj = get_object_or_404(MyModel, pk=pk, user=request.user)"
+                )
+
+            self.vulnerabilities.append(Vulnerability(
+                vuln_id=str(uuid.uuid4())[:8],
+                title="IDOR — Object Lookup Without Ownership Check (AST)",
+                category=VulnCategory.IDOR,
+                severity=Severity.HIGH,
+                location=CodeLocation(file_path, lineno, snippet=snippet),
+                description=(
+                    f"A queryset uses .filter(id=...) or .get(pk=...) with a user-controlled "
+                    f"value ({value_repr}) but no ownership filter (user=request.user). "
+                    "Any authenticated user can access any object by changing the ID."
+                ),
+                owasp_ref="A01:2021 – Broken Access Control",
+                cwe_id="CWE-639",
+                fix=Fix(
+                    description="Add ownership filter to queryset",
+                    original_code=snippet,
+                    fixed_code=fix_code,
+                    manual_review_required=True,
+                    explanation="Use get_object_or_404(Model, pk=pk, user=request.user) to prevent IDOR.",
+                ),
+                metadata={"source": "business_logic", "ast_detected": True},
+            ))
+
