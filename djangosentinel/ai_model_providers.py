@@ -3,12 +3,15 @@ AI Model Providers — DjangoSentinel.
 
 Provides a uniform abstraction over multiple LLM providers (Anthropic, OpenAI, Google Gemini).
 Each provider implements the same interface: generate(system, user, max_tokens, timeout).
-The default provider is Anthropic (preserving full backward compatibility).
+
+Provider selection (see select_provider):
+    1. SENTINEL_AI_PROVIDER = anthropic | openai | gemini   (explicit choice), else
+    2. the first provider that has an API key, in the order Anthropic, OpenAI, Gemini.
 
 Environment variables:
-    ANTHROPIC_API_KEY   - for Anthropic (Claude) models
-    OPENAI_API_KEY      - for OpenAI GPT-4/3.5 models
-    GOOGLE_API_KEY      - for Google Gemini models
+    ANTHROPIC_API_KEY   - for Anthropic (Claude) models     (model: ANTHROPIC_MODEL)
+    OPENAI_API_KEY      - for OpenAI GPT models             (model: OPENAI_MODEL)
+    GOOGLE_API_KEY      - for Google Gemini models          (model: GEMINI_MODEL)
 """
 
 import os
@@ -58,7 +61,7 @@ class AnthropicProvider(AIModelProvider):
             import urllib.error
 
             payload = json.dumps({
-                "model": "claude-sonnet-4-20250514",
+                "model": os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-20250514"),
                 "max_tokens": max_tokens,
                 "system": system,
                 "messages": [{"role": "user", "content": user}],
@@ -101,7 +104,7 @@ class OpenAIProvider(AIModelProvider):
             messages.append({"role": "user", "content": user})
 
             payload = json.dumps({
-                "model": "gpt-4o-mini",  # could make this configurable
+                "model": os.environ.get("OPENAI_MODEL", "gpt-4o-mini"),
                 "messages": messages,
                 "max_tokens": max_tokens,
                 "temperature": 0.0,
@@ -125,61 +128,88 @@ class OpenAIProvider(AIModelProvider):
 
 
 class GeminiProvider(AIModelProvider):
-    """Google Gemini model provider (generative API)."""
+    """Google Gemini model provider (Generative Language REST API)."""
+
+    DEFAULT_MODEL = "gemini-2.5-flash"
 
     def _get_api_key(self) -> str:
         return os.environ.get("GOOGLE_API_KEY", "")
 
     def _call_api(self, system: str, user: str, max_tokens: int, timeout: int) -> Optional[str]:
         try:
-            import urllib.request
-            import urllib.error
-
-            # Gemini generative endpoint format
-            # Note: Gemini's API structure differs; this is a simplified adapter
-            payload = json.dumps({
-                "contents": [
-                    {"role": "user", "parts": [{"text": user}]},
-                    {"role": "model", "parts": [{"text": system}]},
-                ]
-            }).encode("utf-8")
-
-            url = f"https://generativelanguage.googleapis.com/v1beta/models:generateContent?key={self.api_key}"
+            model = os.environ.get("GEMINI_MODEL", self.DEFAULT_MODEL)
+            body = {
+                "contents": [{"role": "user", "parts": [{"text": user}]}],
+                "generationConfig": {"maxOutputTokens": max_tokens, "temperature": 0.0},
+            }
+            if system.strip():
+                body["systemInstruction"] = {"parts": [{"text": system}]}
 
             req = urllib.request.Request(
-                url,
-                data=payload,
-                headers={"Content-Type": "application/json"},
+                f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+                data=json.dumps(body).encode("utf-8"),
+                headers={
+                    "Content-Type": "application/json",
+                    # key in a header (not the URL) so it never appears in logs
+                    "x-goog-api-key": self.api_key,
+                },
                 method="POST",
             )
 
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
-                # Navigate Gemini's response structure
                 return data["candidates"][0]["content"]["parts"][0]["text"]
         except Exception:
             return None
 
 
 # ---------------------------------------------------------------------------
-# Global default provider — Anthropic, for full backward compatibility
+# Provider selection and the global default provider
 # ---------------------------------------------------------------------------
 
-# Module-level default; can be replaced via set_ai_provider()
-_default_provider: AnthropicProvider = AnthropicProvider()
+_PROVIDERS = {
+    "anthropic": AnthropicProvider,
+    "claude": AnthropicProvider,
+    "openai": OpenAIProvider,
+    "gemini": GeminiProvider,
+    "google": GeminiProvider,
+}
+
+
+def select_provider() -> AIModelProvider:
+    """
+    Pick the AI provider from the environment.
+
+    SENTINEL_AI_PROVIDER (anthropic | openai | gemini) wins when set;
+    otherwise the first provider with an API key is used, in the order
+    Anthropic, OpenAI, Gemini. With no keys at all an (unavailable)
+    Anthropic provider is returned, so AI features degrade gracefully.
+    """
+    wanted = os.environ.get("SENTINEL_AI_PROVIDER", "").strip().lower()
+    if wanted in _PROVIDERS:
+        return _PROVIDERS[wanted]()
+    for cls in (AnthropicProvider, OpenAIProvider, GeminiProvider):
+        provider = cls()
+        if provider.available:
+            return provider
+    return AnthropicProvider()
+
+
+# Module-level default; replace via set_ai_provider(), re-read env via refresh_ai_provider()
+_default_provider: AIModelProvider = select_provider()
 
 
 def set_ai_provider(provider) -> None:
-    """Replace the global default AI model provider.
-
-    Useful for testing or switching between Anthropic / OpenAI / Gemini
-    without code changes.
-
-    Args:
-        provider: An instance of AIModelProvider (or a subclass).
-    """
+    """Replace the global default AI model provider (e.g. in tests)."""
     global _default_provider
     _default_provider = provider
+
+
+def refresh_ai_provider() -> AIModelProvider:
+    """Re-select the default provider from the current environment."""
+    global _default_provider
+    _default_provider = select_provider()
+    return _default_provider
 
 
 def get_ai_provider() -> AIModelProvider:
@@ -188,43 +218,10 @@ def get_ai_provider() -> AIModelProvider:
 
 
 def is_ai_available() -> bool:
-    """Convenience: True if the default provider has an API key configured."""
+    """True if the default provider has an API key configured."""
     return _default_provider.available
 
 
 def ai_generate(system: str, user: str, max_tokens: int = 1500, timeout: int = 30) -> Optional[str]:
     """Generate text using the current default provider."""
     return _default_provider.generate(system, user, max_tokens, timeout)
-
-
-# Keep the original _call_claude name alive for any external imports
-_call_claude = AnthropicProvider._call_api  # noqa: F811 (assigned at module load)
-
-
-# ---------------------------------------------------------------------------
-# Quick smoke test (only runs when file executed directly)
-# ---------------------------------------------------------------------------
-if __name__ == "__main__":
-    import sys
-    # Verify all three providers are importable and have .available
-    from djangosentinel.ai_model_providers import (
-        AnthropicProvider,
-        OpenAIProvider,
-        GeminiProvider,
-        set_ai_provider,
-        get_ai_provider,
-        is_ai_available,
-        ai_generate,
-    )
-
-    # Default (Anthropic)
-    print("Anthropic available:", is_ai_available())
-    print("Default provider:", type(get_ai_provider()).__name__)
-
-    # Switch to OpenAI (will be unavailable unless OPENAI_API_KEY set)
-    set_ai_provider(OpenAIProvider())
-    print("After switch - available:", is_ai_available())
-    print("Provider now:", type(get_ai_provider()).__name__)
-
-    # Can also set None/silently fail; the framework gracefully degrades.
-    print("\nAll providers importable — backward compatible ✅")

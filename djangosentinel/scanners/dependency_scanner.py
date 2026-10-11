@@ -16,6 +16,7 @@ try:
 except ImportError:
     HAS_PACKAGING = False
 
+from djangosentinel.paths import is_excluded
 from djangosentinel.models import (
     Vulnerability, VulnCategory, Severity, CodeLocation, Fix
 )
@@ -249,8 +250,7 @@ class DependencyScanner:
         return self.vulnerabilities
 
     def _is_excluded(self, path: Path) -> bool:
-        excludes = {"venv", ".venv", "env", "node_modules", "__pycache__", ".git"}
-        return any(part in excludes for part in path.parts)
+        return is_excluded(path, self.project_path)
 
     def _scan_requirements_file(self, req_file: Path):
         rel_path = str(req_file.relative_to(self.project_path))

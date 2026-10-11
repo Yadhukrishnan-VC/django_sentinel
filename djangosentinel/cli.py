@@ -27,17 +27,17 @@ from djangosentinel.scanners import (
     DjangoScanner, BusinessLogicScanner, DependencyScanner, ASTScanner,
     DiffScanner, GitDiffSource,
 )
-from djangosentinel.fixers import AutoFixer, ContextAwareFixer
+from djangosentinel.fixers import ContextAwareFixer
+from djangosentinel.paths import is_excluded
 from djangosentinel.reporters import (
     TerminalReporter, JSONReporter, HTMLReporter, SARIFReporter, DiffReporter
 )
 from djangosentinel.hooks import HookInstaller
 from djangosentinel.analysis import (
     DataFlowTracker, apply_confidence_scores, deduplicate,
-    filter_by_confidence, score_label, score_emoji,
+    filter_by_confidence,
 )
-from djangosentinel.cache import ScanCache, file_hash, IncrementalScanner
-from djangosentinel.fixers import ASTSafeFixer
+from djangosentinel.cache import ScanCache
 
 
 SEVERITY_ORDER = {
@@ -162,7 +162,7 @@ sentinel install-hooks                     Install pre-commit/pre-push hooks
     fix_grp.add_argument("--dry-run", action="store_true", help="Preview fixes without applying")
 
     # ── AI options ────────────────────────────────────────────────────────────
-    ai_grp = scan_p.add_argument_group("AI options (require ANTHROPIC_API_KEY)")
+    ai_grp = scan_p.add_argument_group("AI options (need ANTHROPIC_API_KEY, OPENAI_API_KEY or GOOGLE_API_KEY)")
     ai_grp.add_argument(
         "--ai", action="store_true",
         help="Enable AI-powered fixes and explanations",
@@ -300,11 +300,12 @@ def run_diff_scan(args) -> tuple:
 
     if use_ai:
         from djangosentinel.ai_engine import AIFixEngine, AIExplainer, AIPatternScanner
-        api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-        ai_fix_engine = AIFixEngine(api_key=api_key)
-        ai_explainer = AIExplainer(api_key=api_key)
+        from djangosentinel.ai_model_providers import refresh_ai_provider
+        refresh_ai_provider()  # pick Anthropic / OpenAI / Gemini from the environment
+        ai_fix_engine = AIFixEngine()
+        ai_explainer = AIExplainer()
         if getattr(args, "ai_deep", False):
-            ai_pattern_scanner = AIPatternScanner(api_key=api_key)
+            ai_pattern_scanner = AIPatternScanner()
         if is_terminal:
             status = (
                 _c("green", "✅ AI ready", no_color) if ai_fix_engine.available
@@ -430,11 +431,12 @@ def run_full_scan(args) -> ScanResult:
 
     if use_ai:
         from djangosentinel.ai_engine import AIFixEngine, AIExplainer, AIPatternScanner
-        api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-        ai_fix_engine = AIFixEngine(api_key=api_key)
-        ai_explainer = AIExplainer(api_key=api_key)
+        from djangosentinel.ai_model_providers import refresh_ai_provider
+        refresh_ai_provider()  # pick Anthropic / OpenAI / Gemini from the environment
+        ai_fix_engine = AIFixEngine()
+        ai_explainer = AIExplainer()
         if getattr(args, "ai_deep", False):
-            ai_pattern_scanner = AIPatternScanner(api_key=api_key)
+            ai_pattern_scanner = AIPatternScanner()
         if is_terminal:
             status = (
                 _c("green", "✅ AI ready", no_color)
@@ -449,24 +451,28 @@ def run_full_scan(args) -> ScanResult:
     files_scanned = 0
     start = time.time()
 
-    exclude = {"venv", ".venv", "__pycache__", ".git", "migrations", "node_modules"}
     for f in Path(project_path).rglob("*.py"):
-        if not any(p in f.parts for p in exclude):
+        if not is_excluded(f, project_path):
             files_scanned += 1
     for f in Path(project_path).rglob("*.html"):
-        if not any(p in f.parts for p in exclude):
+        if not is_excluded(f, project_path):
             files_scanned += 1
 
-    # ── Incremental cache setup ───────────────────────────────────────────────
-    use_cache = not getattr(args, "no_cache", False)
+    # ── Cache housekeeping (--clear-cache) ────────────────────────────────────
     if getattr(args, "clear_cache", False):
         ScanCache(project_path).clear()
         print(_c("green", "  ✅ Scan cache cleared.", no_color))
         sys.exit(0)
 
+    def _run_ast_scanner():
+        ast_scanner = ASTScanner(project_path)
+        found = ast_scanner.scan()
+        errors.extend(ast_scanner.parse_errors)
+        return found
+
     scanners_to_run = [
         ("🔍 Django Scanner",         lambda: DjangoScanner(project_path).scan(),          True),
-        ("📐 AST Structural Scanner", lambda: ASTScanner(project_path).scan(),             not getattr(args, "skip_ast", False)),
+        ("📐 AST Structural Scanner", _run_ast_scanner,                                    not getattr(args, "skip_ast", False)),
         ("🧠 Business Logic Scanner", lambda: BusinessLogicScanner(project_path).scan(),   not getattr(args, "skip_logic", False)),
         ("📦 Dependency CVE Scanner", lambda: DependencyScanner(project_path).scan(),      not getattr(args, "skip_deps", False)),
     ]
@@ -489,8 +495,6 @@ def run_full_scan(args) -> ScanResult:
             tracker = DataFlowTracker(project_path)
             taint_flows = tracker.analyze_project()
             import uuid as _uuid
-            from djangosentinel.analysis.data_flow import SINKS
-            from djangosentinel.models import Fix as _Fix
             for flow in taint_flows:
                 if not flow.sanitized:
                     sev_map = {"CRITICAL": Severity.CRITICAL, "HIGH": Severity.HIGH,
@@ -519,7 +523,7 @@ def run_full_scan(args) -> ScanResult:
         if is_terminal:
             _step("🤖", "Running AI pattern scanner (deep mode)...", no_color)
         for py_file in Path(project_path).rglob("*.py"):
-            if any(p in py_file.parts for p in exclude):
+            if is_excluded(py_file, project_path):
                 continue
             try:
                 source = py_file.read_text(encoding="utf-8", errors="ignore")
@@ -550,7 +554,7 @@ def run_full_scan(args) -> ScanResult:
     try:
         for py_file in Path(project_path).rglob("*.py"):
             rel = str(py_file.relative_to(project_path))
-            if not any(p in py_file.parts for p in exclude):
+            if not is_excluded(py_file, project_path):
                 source_map[rel] = py_file.read_text(encoding="utf-8", errors="ignore")
     except Exception:
         pass
@@ -605,9 +609,29 @@ def run_full_scan(args) -> ScanResult:
 # Command handlers
 # ─────────────────────────────────────────────────────────────────────────────
 
+def _validate_project_dir(path_str: str, no_color: bool = False) -> None:
+    """
+    Exit with status 2 if the scan target is missing or not a directory.
+
+    Without this check a mistyped path scans zero files and reports
+    "No vulnerabilities found", which would let a broken CI step pass.
+    """
+    p = Path(path_str)
+    if not p.exists():
+        print(_c("red", f"  ❌ Path not found: {path_str}", no_color), file=sys.stderr)
+        sys.exit(2)
+    if not p.is_dir():
+        print(
+            _c("red", f"  ❌ Not a directory: {path_str} (pass the project folder to scan)", no_color),
+            file=sys.stderr,
+        )
+        sys.exit(2)
+
+
 def cmd_scan(args):
     no_color = getattr(args, "no_color", False)
     use_diff = getattr(args, "diff", False) or getattr(args, "diff_file", None)
+    _validate_project_dir(getattr(args, "path", "."), no_color)
 
     # Handle --clear-cache before any scan
     if getattr(args, "clear_cache", False):
@@ -680,8 +704,7 @@ def cmd_scan(args):
         else:
             summarizer = None
             if getattr(args, "ai", False):
-                api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-                summarizer = PRReviewSummarizer(api_key=api_key)
+                summarizer = PRReviewSummarizer()
 
             if do_pr:
                 ok = gh.post_summary_comment(result, summarizer=summarizer)
@@ -735,8 +758,9 @@ def cmd_explain(args):
     from djangosentinel.ai_engine import AIExplainer
     from djangosentinel.models import Vulnerability, VulnCategory, Severity, CodeLocation
 
-    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-    explainer = AIExplainer(api_key=api_key)
+    from djangosentinel.ai_model_providers import refresh_ai_provider
+    refresh_ai_provider()
+    explainer = AIExplainer()
 
     if not explainer.available:
         print(_c("yellow", "  ⚠️  No AI API key set (ANTHROPIC_API_KEY, OPENAI_API_KEY or GOOGLE_API_KEY). Cannot generate AI explanation.", no_color))
@@ -829,7 +853,17 @@ def cmd_hook_status(args):
 # Entry point
 # ─────────────────────────────────────────────────────────────────────────────
 
+def _make_console_safe():
+    """Replace characters the terminal cannot encode instead of crashing."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(errors="replace")
+        except (AttributeError, ValueError):
+            pass
+
+
 def main():
+    _make_console_safe()
     parser = build_parser()
     args = parser.parse_args()
 

@@ -32,6 +32,8 @@ from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 from dataclasses import dataclass, field
 
+from djangosentinel.paths import is_excluded
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Taint sources — where user data enters
@@ -188,8 +190,7 @@ class DataFlowTracker:
         return all_flows
 
     def _should_skip(self, path: Path) -> bool:
-        skip = {"venv", ".venv", "env", "node_modules", "__pycache__", ".git", "migrations"}
-        return any(part in skip for part in path.parts)
+        return is_excluded(path, self.project_path)
 
     def _flow_is_real(self, flow: DataFlow, visitor: "_TaintVisitor") -> bool:
         """

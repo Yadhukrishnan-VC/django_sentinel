@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import List, Optional
 import uuid
 
+from djangosentinel.paths import is_excluded
 from djangosentinel.models import (
     Vulnerability, VulnCategory, Severity, CodeLocation, Fix
 )
@@ -52,8 +53,7 @@ class BusinessLogicScanner:
         return self.vulnerabilities
 
     def _is_excluded(self, path: Path) -> bool:
-        excludes = {"venv", ".venv", "env", "node_modules", "__pycache__", ".git", "migrations"}
-        return any(part in excludes for part in path.parts)
+        return is_excluded(path, self.project_path)
 
     def _scan_race_conditions(self, source: str, file_path: str):
         """Detect race conditions in balance checks and inventory management."""
@@ -137,6 +137,7 @@ class BusinessLogicScanner:
                     owasp_ref="A04:2021 – Insecure Design",
                     cwe_id="CWE-681",
                     fix=Fix(
+                            manual_review_required=True,  # generic template, not derived from the real code: needs human/AI review
                         description="Use Python Decimal for monetary values",
                         original_code=line.strip(),
                         fixed_code=(
@@ -168,6 +169,7 @@ class BusinessLogicScanner:
                     owasp_ref="A04:2021 – Insecure Design",
                     cwe_id="CWE-20",
                     fix=Fix(
+                            manual_review_required=True,  # generic template, not derived from the real code: needs human/AI review
                         description="Validate that price/quantity is positive",
                         original_code=line.strip(),
                         fixed_code=(
@@ -206,6 +208,7 @@ class BusinessLogicScanner:
                     owasp_ref="A01:2021 – Broken Access Control",
                     cwe_id="CWE-269",
                     fix=Fix(
+                            manual_review_required=True,  # generic template, not derived from the real code: needs human/AI review
                         description="Remove privileged fields from user-controlled updates",
                         original_code=line.strip(),
                         fixed_code=(
@@ -289,6 +292,7 @@ class BusinessLogicScanner:
                         owasp_ref="A04:2021 – Insecure Design",
                         cwe_id="CWE-20",
                         fix=Fix(
+                                manual_review_required=True,  # generic template, not derived from the real code: needs human/AI review
                             description="Add balance guard with atomic transaction",
                             original_code=line.strip(),
                             fixed_code=(
@@ -398,6 +402,7 @@ class BusinessLogicScanner:
                     owasp_ref="A07:2021 – Identification and Authentication Failures",
                     cwe_id="CWE-613",
                     fix=Fix(
+                            manual_review_required=True,  # generic template, not derived from the real code: needs human/AI review
                         description="Use django.utils.timezone.now() instead",
                         original_code="datetime.now()",
                         fixed_code=(

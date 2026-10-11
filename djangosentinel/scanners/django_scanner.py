@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 import uuid
 
+from djangosentinel.paths import is_excluded
 from djangosentinel.models import (
     Vulnerability, VulnCategory, Severity, CodeLocation, Fix
 )
@@ -203,8 +204,7 @@ class DjangoScanner:
         return self.vulnerabilities
 
     def _is_excluded(self, path: Path) -> bool:
-        excludes = {"venv", ".venv", "env", ".env", "node_modules", "__pycache__", ".git", "migrations"}
-        return any(part in excludes for part in path.parts)
+        return is_excluded(path, self.project_path)
 
     def _is_settings_file(self, path: Path) -> bool:
         return "settings" in path.stem.lower() or path.stem == "config"
@@ -333,6 +333,7 @@ class DjangoScanner:
                     owasp_ref="A01:2021 – Broken Access Control",
                     cwe_id="CWE-601",
                     fix=Fix(
+                            manual_review_required=True,  # generic template, not derived from the real code: needs human/AI review
                         description="Validate redirect URL before redirecting",
                         original_code=line.strip(),
                         fixed_code=(
@@ -393,6 +394,7 @@ class DjangoScanner:
                     owasp_ref="A01:2021 – Broken Access Control",
                     cwe_id="CWE-915",
                     fix=Fix(
+                            manual_review_required=True,  # generic template, not derived from the real code: needs human/AI review
                         description="Explicitly list allowed fields",
                         original_code="fields = '__all__'",
                         fixed_code=(
@@ -419,6 +421,7 @@ class DjangoScanner:
                     owasp_ref="A03:2021 – Injection",
                     cwe_id="CWE-78",
                     fix=Fix(
+                            manual_review_required=True,  # generic template, not derived from the real code: needs human/AI review
                         description="Use shell=False with argument list",
                         original_code="shell=True",
                         fixed_code="shell=False  # Pass args as list: subprocess.run(['cmd', arg1, arg2])",
@@ -528,6 +531,7 @@ class DjangoScanner:
                     owasp_ref="A03:2021 – Injection",
                     cwe_id="CWE-94",
                     fix=Fix(
+                            manual_review_required=True,  # generic template, not derived from the real code: needs human/AI review
                         description="Use static template with context variables",
                         original_code=line.strip(),
                         fixed_code=(
@@ -655,10 +659,8 @@ class DjangoScanner:
                     fix=Fix(
                         description="Remove autoescape off or use |safe only on trusted content",
                         original_code="{% autoescape off %}",
-                        fixed_code=(
-                            "{# Remove autoescape off. If you need unescaped HTML, ensure it's "
-                            "from a trusted source only, and use |safe on individual variables. #}"
-                        ),
+                        # Switch escaping back on; the matching {% endautoescape %} stays valid.
+                        fixed_code="{% autoescape on %}",
                         explanation="Rely on Django's default auto-escaping for all user content.",
                     ),
                 ))

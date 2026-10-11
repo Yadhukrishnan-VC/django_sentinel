@@ -20,6 +20,7 @@ import uuid
 from pathlib import Path
 from typing import List, Optional, Set, Tuple, Dict
 
+from djangosentinel.paths import is_excluded
 from djangosentinel.models import (
     Vulnerability, VulnCategory, Severity, CodeLocation, Fix
 )
@@ -34,9 +35,13 @@ class ASTScanner:
     def __init__(self, project_path: str):
         self.project_path = Path(project_path)
         self.vulnerabilities: List[Vulnerability] = []
+        # Files that could not be parsed (reported by the CLI instead of being
+        # silently skipped, so a broken file never looks like a clean file).
+        self.parse_errors: List[str] = []
 
     def scan(self) -> List[Vulnerability]:
         self.vulnerabilities = []
+        self.parse_errors = []
 
         for py_file in self.project_path.rglob("*.py"):
             if self._is_excluded(py_file):
@@ -46,7 +51,11 @@ class ASTScanner:
                 rel_path = str(py_file.relative_to(self.project_path))
                 tree = ast.parse(source, filename=str(py_file))
                 self._scan_tree(tree, source, rel_path)
-            except SyntaxError:
+            except SyntaxError as e:
+                rel = str(py_file.relative_to(self.project_path))
+                self.parse_errors.append(
+                    f"{rel}: could not be parsed (SyntaxError line {e.lineno}) - skipped by AST analysis"
+                )
                 continue
             except Exception:
                 continue
@@ -54,8 +63,7 @@ class ASTScanner:
         return self.vulnerabilities
 
     def _is_excluded(self, path: Path) -> bool:
-        excludes = {"venv", ".venv", "env", "node_modules", "__pycache__", ".git", "migrations"}
-        return any(part in excludes for part in path.parts)
+        return is_excluded(path, self.project_path)
 
     def _scan_tree(self, tree: ast.AST, source: str, file_path: str):
         """Run all AST checks on a parsed file."""
@@ -217,6 +225,7 @@ class _SecurityVisitor(ast.NodeVisitor):
                     "A04:2021 – Insecure Design",
                     "CWE-1188",
                     Fix(
+                        manual_review_required=True,  # generic template, not derived from the real code: needs human/AI review
                         description="Use None as default, initialise inside function",
                         original_code=f"def {node.name}(..., data={{}}):",
                         fixed_code=(
@@ -262,6 +271,7 @@ class _SecurityVisitor(ast.NodeVisitor):
                     "A07:2021 – Identification and Authentication Failures",
                     "CWE-390",
                     Fix(
+                        manual_review_required=True,  # generic template, not derived from the real code: needs human/AI review
                         description="Log the exception and re-raise or return a safe default",
                         original_code="except Exception:\n    pass",
                         fixed_code=(
@@ -374,6 +384,7 @@ class _SecurityVisitor(ast.NodeVisitor):
                         "A02:2021 – Cryptographic Failures",
                         "CWE-208",
                         Fix(
+                            manual_review_required=True,  # generic template, not derived from the real code: needs human/AI review
                             description="Use hmac.compare_digest() for constant-time comparison",
                             original_code="if token == expected_token:",
                             fixed_code=(
@@ -471,6 +482,7 @@ class _SecurityVisitor(ast.NodeVisitor):
                 "A03:2021 – Injection",
                 "CWE-470",
                 Fix(
+                    manual_review_required=True,  # generic template, not derived from the real code: needs human/AI review
                     description="Use an explicit allowlist of permitted attribute names",
                     original_code=self._snippet(node),
                     fixed_code=(
@@ -555,6 +567,7 @@ class _SecurityVisitor(ast.NodeVisitor):
                 "A02:2021 – Cryptographic Failures",
                 "CWE-338",
                 Fix(
+                    manual_review_required=True,  # generic template, not derived from the real code: needs human/AI review
                     description="Use secrets module for cryptographically secure random values",
                     original_code=parent_src,
                     fixed_code=(
@@ -602,6 +615,7 @@ class _SecurityVisitor(ast.NodeVisitor):
             "A02:2021 – Cryptographic Failures",
             "CWE-327",
             Fix(
+                manual_review_required=True,  # generic template, not derived from the real code: needs human/AI review
                 description="Use SHA-256 or stronger; use bcrypt/argon2 for passwords",
                 original_code=parent_src,
                 fixed_code=(
@@ -652,6 +666,7 @@ class _SecurityVisitor(ast.NodeVisitor):
                 "A09:2021 – Security Logging and Monitoring Failures",
                 "CWE-117",
                 Fix(
+                    manual_review_required=True,  # generic template, not derived from the real code: needs human/AI review
                     description="Use lazy % logging to prevent log injection",
                     original_code=self._snippet(node),
                     fixed_code=(
@@ -701,6 +716,7 @@ class _SecurityVisitor(ast.NodeVisitor):
                     "A05:2021 – Security Misconfiguration",
                     "CWE-200",
                     Fix(
+                        manual_review_required=True,  # generic template, not derived from the real code: needs human/AI review
                         description="Move IP address to environment variable",
                         original_code=self._snippet(node),
                         fixed_code=(

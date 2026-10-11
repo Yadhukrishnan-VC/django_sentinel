@@ -7,10 +7,18 @@
 - Auto-fix for hard-coded secrets renamed `SECRET_KEY` to `SECRET` and needed a third-party package. It now keeps the variable name and reads it from `os.environ`; non-assignment cases are left for manual review.
 - AI pattern scanner now skips files inside `migrations/` packages, as documented.
 - "AI disabled" message now names all three supported API keys.
+- A mistyped or non-directory scan path scanned zero files and reported "No vulnerabilities found" (exit 0). It now exits with status 2 and a clear message.
+- Directory exclusions were matched against the absolute path, so a project located under a folder named `env`, `venv` or `migrations` was silently skipped, while `.sentinel_backups/` was scanned (double-counting findings after `fix`). One shared, project-relative rule (`djangosentinel/paths.py`) is now used by every scanner.
+- Files that cannot be parsed are listed in the report `errors` instead of being skipped silently.
+- Auto-fix safety: `ASTSafeFixer` no longer overwrites an unrelated line with a generic template when the original code is not found. Fixes built from placeholder names (`==` token comparison, `random`, mutable defaults, redirects, `fields = '__all__'`, `shell=True`, hashing, business-logic templates) are now flagged for manual review. The `autoescape` fix keeps `{% endautoescape %}` balanced.
+- AI providers: OpenAI-only and Gemini-only setups now work (provider chosen from the environment, or `SENTINEL_AI_PROVIDER`); the Gemini adapter used an invalid endpoint and now sends `systemInstruction` to `models/<model>:generateContent`. Models can be set with `ANTHROPIC_MODEL`, `OPENAI_MODEL`, `GEMINI_MODEL`.
+- `from djangosentinel import *` raised `AttributeError` because `__all__` listed names that were never imported; exports are now resolved lazily.
+- The CLI no longer crashes with `UnicodeEncodeError` on consoles that cannot encode emoji (for example Windows `cp1252`).
 - Docker: the image is built from the local source (not from PyPI), has `production` and `development` targets, no restart loop, and a `.dockerignore`.
 
 ### Added
 - `tests/test_ai_engine.py`: regression tests for the AI engine (fake provider) and the secret auto-fix.
+- `tests/test_stability.py`: regression tests for the fixes above.
 
 
 

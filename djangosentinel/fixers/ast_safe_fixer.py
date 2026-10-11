@@ -177,10 +177,11 @@ class ASTSafeFixer:
         """
         Core fix application with indentation preservation.
 
-        Three-stage approach:
+        Three-stage approach (a fix is applied only if its original code is
+        really present - never by overwriting an unrelated line):
         Stage 1: Exact match replacement (same line, simple swap)
         Stage 2: Line-number targeted replacement (multi-line fix)
-        Stage 3: Pattern-based replacement (when exact code isn't found)
+        Stage 3: Whole-source replacement of the exact original code
         """
         fix = vuln.fix
         lines = source.splitlines(keepends=True)
@@ -239,20 +240,13 @@ class ASTSafeFixer:
                 )
                 return "".join(new_lines)
 
-        # Stage 3: Pattern-based replacement using snippet at target line
-        if vuln.location.snippet and vuln.location.snippet in target_line.rstrip():
-            # Single-line snippet match
-            if "\n" not in fix.fixed_code:
-                new_line = target_indent + fix.fixed_code.lstrip() + "\n"
-                lines[target_line_idx] = new_line
-                return "".join(lines)
-            else:
-                # Multi-line replacement at target location
-                indented_fix = apply_indent(fix.fixed_code, target_indent)
-                lines[target_line_idx] = indented_fix + "\n"
-                return "".join(lines)
+        # Stage 3 (removed): replacing the whole target line with a generic fix
+        # template when original_code was NOT found. Templates use placeholder
+        # names (e.g. "token", "expected_token"), so such a replacement parses
+        # fine but silently changes behaviour. Fixes are now applied only when
+        # the original code is actually matched.
 
-        # Stage 4: Whole-source text replacement (last resort)
+        # Stage 3: Whole-source text replacement of the exact original code
         if fix.original_code and fix.original_code in source:
             # Still use indentation preservation
             orig_start = source.index(fix.original_code)
