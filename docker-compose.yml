@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  sentinel:
+    build: .
+    container_name: django-sentinel
+    restart: unless-stopped
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GITHUB_REPOSITORY=${GITHUB_REPOSITORY}
+      - GITHUB_SHA=${GITHUB_SHA}
+      - GITHUB_REF=${GITHUB_REF}
+    volumes:
+      - .:/app
+    working_dir: /app
+    # Use host network for GitHub API access
+    network_mode: host
+    
+  # Optional: Development/debug container
+  dev:
+    build: .
+    container_name: django-sentinel-dev
+    restart: unless-stopped
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+    volumes:
+      - .:/app
+      - ~/.anthropic:/root/.anthropic:ro
+    working_dir: /app
+    command: python -m djangosentinel.cli scan .
+    network_mode: host
