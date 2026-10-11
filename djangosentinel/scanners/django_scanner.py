@@ -568,20 +568,33 @@ class DjangoScanner:
                         ),
                         owasp_ref="A02:2021 – Cryptographic Failures",
                         cwe_id="CWE-798",
-                        fix=Fix(
-                            description="Move secret to environment variable",
-                            original_code=line.strip(),
-                            fixed_code=(
-                                "import os\n"
-                                "from decouple import config  # pip install python-decouple\n\n"
-                                "# In .env file (add to .gitignore):\n"
-                                "# MY_SECRET=your-actual-secret\n\n"
-                                "SECRET = config('MY_SECRET')\n"
-                                "# Or: SECRET = os.environ.get('MY_SECRET')"
-                            ),
-                            explanation="Use environment variables or a secrets manager.",
-                        ),
+                        fix=self._secret_fix(line),
                     ))
+
+    @staticmethod
+    def _secret_fix(line: str) -> Fix:
+        """Build a fix that keeps the original variable name (e.g. SECRET_KEY)
+        and reads its value from the environment instead of the source code."""
+        m = re.match(
+            r"""\s*([A-Za-z_][A-Za-z0-9_]*)\s*(?::[^=]+)?=\s*(?:"[^"]*"|'[^']*')\s*(?:#.*)?$""",
+            line,
+        )
+        if not m:
+            # e.g. a Bearer token inside a string: no assignment to rewrite safely
+            return Fix(
+                description="Move secret to environment variable",
+                original_code=line.strip(),
+                fixed_code="",
+                manual_review_required=True,
+                explanation="Remove the token from the source and load it from the environment or a secrets manager.",
+            )
+        name = m.group(1)
+        return Fix(
+            description="Move secret to environment variable",
+            original_code=line.strip(),
+            fixed_code=f'import os\n{name} = os.environ["{name}"]  # set {name} in the environment / .env file',
+            explanation="Use environment variables or a secrets manager. Rotate the exposed secret.",
+        )
 
     def _scan_dangerous_functions(self, source: str, file_path: str):
         """Detect use of dangerous Python/Django functions."""

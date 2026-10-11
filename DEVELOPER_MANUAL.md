@@ -459,100 +459,35 @@ currently set provider. No code changes are needed to support multiple providers
 
 ## Docker Containerized Deployment and Configuration
 
-DjangoSentinel can be deployed inside Docker containers for isolated, reproducible scanning environments. This is particularly useful for CI/CD pipelines, development consistency, and production hardening.
+DjangoSentinel ships with a multi-stage `Dockerfile` and a `docker-compose.yml`. They give the project two switchable environments built from the same source.
 
 ### Dockerfile
 
-The project includes a `Dockerfile` that uses `python:3.12-slim` as the base image and installs `django-sentinel` from PyPI. The default command is `sentinel scan .`, which runs a full security scan when the container starts.
+| Target | Purpose | Contents |
+|--------|---------|----------|
+| `production` (default) | Run scans | `python:3.12-slim`, `git` (for `--diff`), DjangoSentinel installed from the local source, non-root user `sentinel`, `ENTRYPOINT ["sentinel"]`, `CMD ["scan", "."]` |
+| `development` | Work on DjangoSentinel | Same base, `pip install -e ".[dev]"`, tests copied in, default command `python -m pytest -q` |
 
-**Key Dockerfile features:**
-- `pip install django-sentinel` (installs the package from PyPI)
-- Environment variables passed at runtime via `docker run -e` or `docker-compose`
-- Host network mode for GitHub API access
-- Caching via `.anthropic` volume (in docker-compose)
-
-**Dockerfile contents:**
-```dockerfile
-FROM python:3.12-slim
-WORKDIR /app
-RUN pip install --no-cache-dir django-sentinel
-CMD ["sentinel", "scan", "."]
-```
+The image is built from the local source, not from PyPI, so it always matches the checked-out code.
 
 ### docker-compose.yml
 
-The included `docker-compose.yml` defines a development service `sentinel` that:
+- `sentinel` (production target): mounts `${SCAN_PATH:-.}` at `/src`, passes the AI and GitHub environment variables through, `restart: "no"`.
+- `dev` (development target, profile `dev`): mounts the source at `/opt/sentinel` for live editing and the project to scan at `/src`.
 
-- Mounts the current directory as a volume (`.:/app`) for code scanning
-- Reads environment variables from `.env` file
-- Uses the host's network stack for GitHub API access
-- Optionally caches data in a `.anthropic` volume
-
-**docker-compose.yml service definition:**
-```yaml
-services:
-  sentinel:
-    build: .
-    container_name: django-sentinel
-    restart: unless-stopped
-    environment:
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
-      - GITHUB_TOKEN=${GITHUB_TOKEN}
-      - GITHUB_REPOSITORY=${GITHUB_REPOSITORY}
-      - GITHUB_SHA=${GITHUB_SHA}
-      - GITHUB_REF=${GITHUB_REF}
-    volumes:
-      - .:/app
-    working_dir: /app
-    network_mode: host
-```
-
-### .env.example
-
-The included `.env.example` file provides a template for all supported environment variables:
-
-| Variable | Description | Example |
-|---|---|---|
-| `ANTHROPIC_API_KEY` | Claude API key for AI features | `sk-ant-...` |
-| `OPENAI_API_KEY` | OpenAI GPT-4/3.5 API key | `sk-...` |
-| `GOOGLE_API_KEY` | Google Gemini API key | `AIza...` |
-| `GITHUB_TOKEN` | GitHub Personal Access Token | `ghp_...` |
-| `GITHUB_REPOSITORY` | Repository owner/name | `myorg/myapp` |
-| `GITHUB_SHA` | Git commit SHA | `a1b2c3d4` |
-| `GITHUB_REF` | Git reference (PR number) | `refs/pull/42/merge` |
-
-**Usage:**
 ```bash
-cp .env.example .env
-# Edit .env with your keys
-docker-compose up --build
-# Or run standalone:
-docker run -it --rm -v $(pwd):/app -e ANTHROPIC_API_KEY="your-key" django-sentinel sentinel scan .
+docker compose run --rm sentinel scan .                     # production environment
+docker compose --profile dev run --rm dev                   # development: run tests
+docker compose --profile dev run --rm dev bash              # development: shell
 ```
 
-### Developer Workflow with Docker
+### Environment file
 
-1. **Clone the repository**
-2. **Copy `.env.example` to `.env`** and fill in your API keys
-3. **Run `docker-compose up --build`** to start the scanner container
-4. **View results** in the container output or mounted report files
-5. **Modify code** - changes are reflected instantly via the volume mount
-6. **Run `docker-compose down`** to stop the container
+Copy `.env.example` to `.env`. Provide one AI key (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY` or `GOOGLE_API_KEY`) and, for pull-request features, the GitHub variables. Keys are read at run time and never stored in the image.
 
-### CI/CD Integration
+### CI usage
 
-For GitHub Actions or other CI systems, use the environment variables directly without Docker compose:
-
-```yaml
-- name: DjangoSentinel Security Scan
-  run: sentinel scan . --format sarif -o report.sarif
-  env:
-    ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-```
-
+For GitHub Actions or other CI systems, use the environment variables directly without Docker Compose (see `docs/CI_INTEGRATION.md`).
 
 ## Contributing
 

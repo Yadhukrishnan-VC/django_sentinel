@@ -1,28 +1,49 @@
-FROM python:3.12-slim
+# DjangoSentinel container image
+# Two build targets share one base:
+#   production  - small image that runs the `sentinel` command (default)
+#   development - editable install + test tools, for working on DjangoSentinel itself
+#
+#   docker build -t django-sentinel .                         # production
+#   docker build --target development -t django-sentinel:dev .
 
-# Set working directory
-WORKDIR /app
+FROM python:3.12-slim AS base
 
-# Install DjangoSentinel from PyPI or use the source
-# Option 1: Install from PyPI (recommended for production)
-RUN pip install --no-cache-dir django-sentinel
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
 
-# Option 2: Use source code (development)
-# COPY . /app
-# RUN pip install -e .
+# git is needed for diff-based scanning (--diff / --staged / --base)
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git \
+    && rm -rf /var/lib/apt/lists/*
 
-# Environment variables (set at runtime or via docker-compose/.env)
-#   ANTHROPIC_API_KEY - for Anthropic Claude AI features
-#   OPENAI_API_KEY - for OpenAI GPT-4/3.5 AI features
-#   GOOGLE_API_KEY - for Google Gemini AI features
-#   GITHUB_TOKEN - for GitHub PR integration (comments, check runs, inline annotations)
-#   GITHUB_REPOSITORY - owner/repo format (e.g., "owner/repo")
-#   GITHUB_SHA - commit SHA (for check runs)
-#   GITHUB_REF - refs/pull/N/merge (for PR-aware scanning)
+WORKDIR /opt/sentinel
+COPY pyproject.toml setup.py README.md LICENSE ./
+COPY djangosentinel ./djangosentinel
 
-# Default command: run sentinel scan on the project directory
-# The scanner will use the working directory or accept a path argument
-CMD ["sentinel", "scan", "."]
 
-# Show help by default
-# ENTRYPOINT ["sentinel"]
+# ── production ───────────────────────────────────────────────────────────────
+FROM base AS production
+
+RUN pip install . \
+    && useradd --create-home --uid 1000 sentinel
+
+USER sentinel
+
+# The project to scan is mounted at /src (see docker-compose.yml)
+WORKDIR /src
+# Git refuses to read repositories owned by another user unless told otherwise
+RUN git config --global --add safe.directory /src
+
+ENTRYPOINT ["sentinel"]
+CMD ["scan", "."]
+
+
+# ── development ──────────────────────────────────────────────────────────────
+FROM base AS development
+
+COPY tests ./tests
+RUN pip install -e ".[dev]"
+
+WORKDIR /opt/sentinel
+CMD ["python", "-m", "pytest", "-q"]

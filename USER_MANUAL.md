@@ -244,86 +244,43 @@ sentinel scan . --diff --format terminal
 
 ## 9. Docker Containerized Deployment
 
-DjangoSentinel can be run inside a Docker container for isolated, reproducible environments.
+DjangoSentinel can be run inside a Docker container for an isolated, reproducible environment. The same code base supports two environments: a small **production** image that runs the `sentinel` command, and a **development** image (editable install plus test tools) for working on DjangoSentinel itself.
 
 ### Prerequisites
-- [Docker](https://docs.docker.com/engine/install/) installed on your machine
-- [Docker Compose](https://docs.docker.com/compose/install/) (optional, for multi-container setups)
 
-### Quick Start with Docker
+- [Docker](https://docs.docker.com/engine/install/) with Docker Compose v2
+
+### Quick Start
 
 ```bash
-# Using Docker (standalone)
-docker run -it --rm   -v $(pwd):/app  -e ANTHROPIC_API_KEY="your-claude-key"   django-sentinel sentinel scan .
+# 1. Create your environment file and add ONE AI key (optional - the scan works without AI)
+cp .env.example .env
 
-# Using Docker Compose
-docker-compose up --build
+# 2. Scan the current folder (production environment)
+docker compose run --rm sentinel scan .
+
+# Scan another project and write a SARIF report
+SCAN_PATH=/path/to/django/project docker compose run --rm sentinel scan . --format sarif -o report.sarif
+
+# 3. Switch to the development environment
+docker compose --profile dev run --rm dev            # runs the test-suite
+docker compose --profile dev run --rm dev bash       # opens a shell
 ```
 
-### Dockerfile Overview
+The project to scan is mounted at `/src` inside the container. Both services are one-shot jobs, so they do not restart on their own.
 
-The included `Dockerfile` uses the official `python:3.12-slim` base image and installs `django-sentinel` from PyPI. It sets `sentinel scan .` as the default command.
+### Without Docker Compose
 
-**Environment Variables:**
-| Variable | Description | Required |
-|---|---|---|
-| `ANTHROPIC_API_KEY` | Claude API key for AI features | No |
-| `OPENAI_API_KEY` | OpenAI GPT API key | No |
-| `GOOGLE_API_KEY` | Google Gemini API key | No |
-| `GITHUB_TOKEN` | GitHub PAT for PR integration | No |
-| `GITHUB_REPOSITORY` | Owner/repo format | No |
-| `GITHUB_SHA` | Commit SHA | No |
-| `GITHUB_REF` | Git ref | No |
-
-### docker-compose.yml
-
-The included `docker-compose.yml` provides a development setup with volume mounting, environment variable configuration, and host network for GitHub API access.
-
-### .env.example
-
-The included `.env.example` file shows all available environment variables. Copy it to `.env` and fill in your keys.
-
-### CI/CD Integration
-
-For GitHub Actions or other CI systems, use environment variables directly:
-```yaml
-- name: DjangoSentinel Security Scan
-  run: sentinel scan . --format sarif -o report.sarif
-  env:
-    ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```bash
+docker build -t django-sentinel .
+docker run --rm -v "$(pwd)":/src -e ANTHROPIC_API_KEY django-sentinel scan .
 ```
 
+### Environment Variables
 
-## Configuration
+| Variable | Purpose |
+|----------|---------|
+| `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` or `GOOGLE_API_KEY` | AI provider (only one is needed) |
+| `GITHUB_TOKEN`, `GITHUB_REPOSITORY`, `GITHUB_SHA`, `GITHUB_REF` | GitHub pull-request integration |
+| `SCAN_PATH` | Folder to scan (defaults to the current folder) |
 
-### `.sentinel.yml`
-Project-level configuration file (auto-generated on first scan). Controls:
-- Cache TTL and paths
-- Scanner toggles default
-- Min-confidence threshold
-- AI engine settings
-
-### `.sentinel_cache/`
-File-hash based scan cache for incremental scanning. Speeds up subsequent scans on unchanged code.
-
----
-
-## Troubleshooting
-
-| Issue | Solution |
-|-------|----------|
-| `No such file or directory` | Ensure you're in a Django project directory |
-| `ANTHROPIC_API_KEY not set` | Set `export ANTHROPIC_API_KEY="your-key"` for AI features |
-| `GitHub token not found` | Set `export GITHUB_TOKEN="your-token"` for PR integration |
-| Scan too slow | Use `--no-cache` disabled or run incrementally; results cached after first run |
-| False positives on test files | Findings in `tests/` or `fixtures/` have reduced confidence (automatically) |
-
----
-
-## License
-MIT License — see LICENSE file for details.
-
-## Need Help?
-- GitHub Issues: https://github.com/yourusername/django-sentinel/issues
-- Documentation: https://django-sentinel.readthedocs.io

@@ -308,7 +308,7 @@ def run_diff_scan(args) -> tuple:
         if is_terminal:
             status = (
                 _c("green", "✅ AI ready", no_color) if ai_fix_engine.available
-                else _c("yellow", "⚠️  No ANTHROPIC_API_KEY", no_color)
+                else _c("yellow", "⚠️  No AI API key (ANTHROPIC_API_KEY, OPENAI_API_KEY or GOOGLE_API_KEY)", no_color)
             )
             print(f"  🤖 AI Engine: {status}\n")
 
@@ -439,7 +439,7 @@ def run_full_scan(args) -> ScanResult:
             status = (
                 _c("green", "✅ AI ready", no_color)
                 if ai_fix_engine.available
-                else _c("yellow", "⚠️  No ANTHROPIC_API_KEY — AI disabled", no_color)
+                else _c("yellow", "⚠️  No AI API key (ANTHROPIC_API_KEY, OPENAI_API_KEY or GOOGLE_API_KEY) — AI disabled", no_color)
             )
             print(f"  🤖 AI Engine: {status}\n")
 

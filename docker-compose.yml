@@ -1,36 +1,52 @@
-version: '3.8'
+# DjangoSentinel - Docker Compose
+#
+# 1. cp .env.example .env     (add one AI key and, optionally, GitHub settings)
+# 2. Scan a project (production image, the default environment):
+#       docker compose run --rm sentinel scan .
+#       docker compose run --rm sentinel scan . --format sarif -o report.sarif
+#       SCAN_PATH=/path/to/django/project docker compose run --rm sentinel scan .
+# 3. Switch to the development environment (editable install, tests, shell):
+#       docker compose --profile dev run --rm dev                # run the test-suite
+#       docker compose --profile dev run --rm dev bash           # open a shell
+#
+# Both services are one-shot jobs, so they never restart on their own.
 
 services:
   sentinel:
-    build: .
-    container_name: django-sentinel
-    restart: unless-stopped
+    build:
+      context: .
+      target: production
+    image: django-sentinel:latest
+    restart: "no"
     environment:
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
-      - GITHUB_TOKEN=${GITHUB_TOKEN}
-      - GITHUB_REPOSITORY=${GITHUB_REPOSITORY}
-      - GITHUB_SHA=${GITHUB_SHA}
-      - GITHUB_REF=${GITHUB_REF}
+      - ANTHROPIC_API_KEY
+      - OPENAI_API_KEY
+      - GOOGLE_API_KEY
+      - GITHUB_TOKEN
+      - GITHUB_REPOSITORY
+      - GITHUB_SHA
+      - GITHUB_REF
     volumes:
-      - .:/app
-    working_dir: /app
-    # Use host network for GitHub API access
-    network_mode: host
-    
-  # Optional: Development/debug container
+      # The project to scan (defaults to the current folder)
+      - ${SCAN_PATH:-.}:/src
+    working_dir: /src
+    command: ["scan", "."]
+
   dev:
-    build: .
-    container_name: django-sentinel-dev
-    restart: unless-stopped
+    build:
+      context: .
+      target: development
+    image: django-sentinel:dev
+    profiles: ["dev"]
+    restart: "no"
     environment:
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - ANTHROPIC_API_KEY
+      - OPENAI_API_KEY
+      - GOOGLE_API_KEY
+      - GITHUB_TOKEN
+      - GITHUB_REPOSITORY
     volumes:
-      - .:/app
-      - ~/.anthropic:/root/.anthropic:ro
-    working_dir: /app
-    command: python -m djangosentinel.cli scan .
-    network_mode: host
+      # Live source code: edits on the host are used immediately
+      - .:/opt/sentinel
+      - ${SCAN_PATH:-.}:/src
+    working_dir: /opt/sentinel

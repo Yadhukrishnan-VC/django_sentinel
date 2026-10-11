@@ -1,5 +1,19 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+- `ai_engine.py` had lost the `AIPatternScanner` and `PRReviewSummarizer` classes, so `--ai`, `--ai-deep` and `--pr-comment` failed with an ImportError. The module is restored and now talks to the provider layer (Anthropic, OpenAI, Google Gemini).
+- Auto-fix for hard-coded secrets renamed `SECRET_KEY` to `SECRET` and needed a third-party package. It now keeps the variable name and reads it from `os.environ`; non-assignment cases are left for manual review.
+- AI pattern scanner now skips files inside `migrations/` packages, as documented.
+- "AI disabled" message now names all three supported API keys.
+- Docker: the image is built from the local source (not from PyPI), has `production` and `development` targets, no restart loop, and a `.dockerignore`.
+
+### Added
+- `tests/test_ai_engine.py`: regression tests for the AI engine (fake provider) and the secret auto-fix.
+
+
+
 All notable changes to DjangoSentinel are documented here.
 
 ---
