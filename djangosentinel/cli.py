@@ -739,7 +739,7 @@ def cmd_explain(args):
     explainer = AIExplainer(api_key=api_key)
 
     if not explainer.available:
-        print(_c("yellow", "  ⚠️  ANTHROPIC_API_KEY not set. Cannot generate AI explanation.", no_color))
+        print(_c("yellow", "  ⚠️  No AI API key set (ANTHROPIC_API_KEY, OPENAI_API_KEY or GOOGLE_API_KEY). Cannot generate AI explanation.", no_color))
         sys.exit(1)
 
     try:
