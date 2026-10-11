@@ -240,6 +240,61 @@ sentinel scan . --diff --format terminal
 
 ---
 
+
+
+## 9. Docker Containerized Deployment
+
+DjangoSentinel can be run inside a Docker container for isolated, reproducible environments.
+
+### Prerequisites
+- [Docker](https://docs.docker.com/engine/install/) installed on your machine
+- [Docker Compose](https://docs.docker.com/compose/install/) (optional, for multi-container setups)
+
+### Quick Start with Docker
+
+```bash
+# Using Docker (standalone)
+docker run -it --rm   -v $(pwd):/app  -e ANTHROPIC_API_KEY="your-claude-key"   django-sentinel sentinel scan .
+
+# Using Docker Compose
+docker-compose up --build
+```
+
+### Dockerfile Overview
+
+The included `Dockerfile` uses the official `python:3.12-slim` base image and installs `django-sentinel` from PyPI. It sets `sentinel scan .` as the default command.
+
+**Environment Variables:**
+| Variable | Description | Required |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | Claude API key for AI features | No |
+| `OPENAI_API_KEY` | OpenAI GPT API key | No |
+| `GOOGLE_API_KEY` | Google Gemini API key | No |
+| `GITHUB_TOKEN` | GitHub PAT for PR integration | No |
+| `GITHUB_REPOSITORY` | Owner/repo format | No |
+| `GITHUB_SHA` | Commit SHA | No |
+| `GITHUB_REF` | Git ref | No |
+
+### docker-compose.yml
+
+The included `docker-compose.yml` provides a development setup with volume mounting, environment variable configuration, and host network for GitHub API access.
+
+### .env.example
+
+The included `.env.example` file shows all available environment variables. Copy it to `.env` and fill in your keys.
+
+### CI/CD Integration
+
+For GitHub Actions or other CI systems, use environment variables directly:
+```yaml
+- name: DjangoSentinel Security Scan
+  run: sentinel scan . --format sarif -o report.sarif
+  env:
+    ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+
 ## Configuration
 
 ### `.sentinel.yml`
