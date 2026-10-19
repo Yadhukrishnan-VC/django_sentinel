@@ -4,13 +4,12 @@ Applies safe, automated fixes to vulnerabilities where the fix is
 deterministic and low-risk. High-risk fixes are flagged for manual review.
 """
 
-import re
 import shutil
 from pathlib import Path
 from typing import List, Dict, Tuple
 from datetime import datetime
 
-from djangosentinel.models import Vulnerability, Fix, Severity
+from djangosentinel.models import Vulnerability, Severity
 
 
 class AutoFixer:

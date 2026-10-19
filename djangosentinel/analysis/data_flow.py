@@ -27,7 +27,6 @@ Inter-file understanding:
 """
 
 import ast
-import hashlib
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 from dataclasses import dataclass, field
@@ -158,6 +157,11 @@ class DataFlowTracker:
         Analyze a single file for taint flows.
         Returns confirmed flows from source to sink.
         """
+        # Cheap pre-check: a flow needs a taint source (a request object or one of
+        # TAINT_SOURCES) somewhere in the file, so skip parsing files without one.
+        if "request" not in source and not any(src in source for src in TAINT_SOURCES):
+            return []
+
         try:
             tree = ast.parse(source, filename=file_path)
         except SyntaxError:
@@ -279,7 +283,6 @@ class _TaintVisitor(ast.NodeVisitor):
 
         # Function call returning tainted value
         if isinstance(node, ast.Call):
-            func_repr = self._src_repr(node.func) if hasattr(node, "func") else ""
             # If any argument to this function is tainted, result may be too
             for arg in getattr(node, "args", []):
                 is_t, src, conf = self._is_taint_source(arg)
@@ -429,7 +432,6 @@ def extract_view_context(node: ast.AST, source: str) -> ViewContext:
     which fix template is appropriate.
     """
     ctx = ViewContext()
-    source_lower = source.lower()
 
     # Class-based view detection
     if isinstance(node, ast.ClassDef):

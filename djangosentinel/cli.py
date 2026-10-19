@@ -17,7 +17,6 @@ sentinel install-hooks                Install git pre-commit/pre-push hooks
 
 import argparse
 import sys
-import os
 import uuid
 import time
 from pathlib import Path
@@ -186,7 +185,7 @@ sentinel install-hooks                     Install pre-commit/pre-push hooks
     # ── Performance / cache ────────────────────────────────────────────────
     perf_grp = scan_p.add_argument_group("Performance")
     perf_grp.add_argument("--no-cache", action="store_true",
-                            help="Disable file-hash cache (always do full scan)")
+                            help="Reserved: the file-hash cache is not used by scans yet, so every scan is a full scan")
     perf_grp.add_argument("--clear-cache", action="store_true",
                             help="Clear the scan cache and exit")
     perf_grp.add_argument("--min-confidence", type=float, default=0.0, metavar="0.0-1.0",

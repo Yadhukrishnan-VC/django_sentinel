@@ -18,7 +18,7 @@ Examples of what AST catches that regex misses:
 import ast
 import uuid
 from pathlib import Path
-from typing import List, Optional, Set, Tuple, Dict
+from typing import List, Optional, Set, Dict
 
 from djangosentinel.paths import is_excluded
 from djangosentinel.models import (
@@ -503,7 +503,6 @@ class _SecurityVisitor(ast.NodeVisitor):
         Detected via call inspection — we look for Assert nodes in context.
         """
         # This is caught at the Assert node level
-        pass
 
     def visit_Assert(self, node: ast.Assert):
         """Detect assert used as a security gate."""

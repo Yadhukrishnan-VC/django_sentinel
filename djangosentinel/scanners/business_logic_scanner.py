@@ -12,13 +12,16 @@ Detects flaws in application logic that security tools typically miss:
 import re
 import ast
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 import uuid
 
 from djangosentinel.paths import is_excluded
 from djangosentinel.models import (
     Vulnerability, VulnCategory, Severity, CodeLocation, Fix
 )
+
+
+_IDOR_CALL_HINT = re.compile(r"\.(?:filter|get|exclude)\s*\(")
 
 
 class BusinessLogicScanner:
@@ -427,6 +430,10 @@ class BusinessLogicScanner:
         This is FAR more accurate than regex because we actually parse
         the keyword arguments to filter()/get() calls.
         """
+        # Cheap pre-check: the visitor only looks at .filter()/.get()/.exclude() calls
+        if not _IDOR_CALL_HINT.search(source):
+            return
+
         try:
             tree = ast.parse(source)
         except SyntaxError:

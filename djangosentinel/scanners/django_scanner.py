@@ -4,11 +4,9 @@ Detects Django configuration issues, ORM misuse, template injection,
 CSRF bypasses, middleware problems, and more.
 """
 
-import ast
 import re
-import os
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List
 import uuid
 
 from djangosentinel.paths import is_excluded
@@ -210,7 +208,7 @@ class DjangoScanner:
         return "settings" in path.stem.lower() or path.stem == "config"
 
     def _scan_settings(self, source: str, file_path: str):
-        for check_name, check in self.SETTINGS_CHECKS.items():
+        for _check_name, check in self.SETTINGS_CHECKS.items():
             pattern = check["pattern"]
             matches = list(re.finditer(pattern, source, re.IGNORECASE))
 
@@ -250,7 +248,7 @@ class DjangoScanner:
                 fix = None
                 if "fix_original" in check:
                     fix = Fix(
-                        description=f"Replace insecure setting",
+                        description="Replace insecure setting",
                         original_code=check["fix_original"],
                         fixed_code=check["fix_replacement"],
                         explanation=f"Change {check['fix_original']} to {check['fix_replacement']}",
@@ -283,11 +281,6 @@ class DjangoScanner:
         """Detect view-level vulnerabilities."""
         lines = source.splitlines()
 
-        # Raw SQL in views
-        raw_sql_pattern = re.compile(
-            r'\.raw\(|execute\(|cursor\(\).*?execute|RawSQL\(',
-            re.DOTALL,
-        )
         format_sql_pattern = re.compile(
             r'(SELECT|INSERT|UPDATE|DELETE|DROP).*?(\{[^}]|%s|\.format\()',
             re.IGNORECASE,

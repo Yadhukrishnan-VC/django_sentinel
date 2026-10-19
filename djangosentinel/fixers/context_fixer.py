@@ -18,10 +18,10 @@ the single guilty line.
 
 import shutil
 from pathlib import Path
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Tuple
 from datetime import datetime
 
-from djangosentinel.models import Vulnerability, Fix, Severity, ScanResult
+from djangosentinel.models import Vulnerability, Fix
 from djangosentinel.fixers.auto_fixer import AutoFixer
 
 

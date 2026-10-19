@@ -206,6 +206,16 @@ DANGEROUS_PACKAGES = {
 }
 
 
+# Compiled once at import time (compiling per line made large scans very slow)
+_DANGEROUS_IMPORT_RES = {
+    _pkg: re.compile(rf"\bimport\s+{re.escape(_pkg)}\b|from\s+{re.escape(_pkg)}\b")
+    for _pkg in DANGEROUS_PACKAGES
+}
+_DANGEROUS_IMPORT_ANY = re.compile(
+    r"(?:import|from)\s+(?:" + "|".join(re.escape(_p) for _p in DANGEROUS_PACKAGES) + r")\b"
+)
+
+
 class DependencyScanner:
     """Scans Python dependency files for known vulnerable packages."""
 
@@ -343,10 +353,15 @@ class DependencyScanner:
 
     def _scan_dangerous_imports(self, source: str, file_path: str):
         """Detect imports of inherently dangerous modules."""
+        # Cheap pre-check: skip files that never import any dangerous module
+        if not _DANGEROUS_IMPORT_ANY.search(source):
+            return
         lines = source.splitlines()
         for i, line in enumerate(lines, 1):
+            if "import" not in line and "from" not in line:
+                continue
             for pkg, warning in DANGEROUS_PACKAGES.items():
-                if re.search(rf'\bimport\s+{re.escape(pkg)}\b|from\s+{re.escape(pkg)}\b', line):
+                if _DANGEROUS_IMPORT_RES[pkg].search(line):
                     self.vulnerabilities.append(Vulnerability(
                         vuln_id=str(uuid.uuid4())[:8],
                         title=f"Dangerous Module Import: {pkg}",

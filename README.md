@@ -132,7 +132,7 @@ sentinel scan . [--diff] [--fix] [--ai]
                        │
 ┌──────────────────────▼─────────────────────────┐
 │  LAYER 3 — AI ENGINE  (with --ai flag)         │
-│  Uses Claude claude-sonnet-4-20250514          │
+│  Claude, OpenAI or Google Gemini (one key)     │
 │                                                │
 │  AIFixEngine       multi-line fix generation  │
 │  AIExplainer       "why is this risky" prose   │
@@ -199,7 +199,10 @@ django-sentinel/
 │       └── git_hooks.py             pre-commit / pre-push script installer
 │
 ├── tests/
-│   └── test_all.py                  50 unit tests (34 scanner + 16 diff)
+│   ├── test_all.py                  104 unit tests (scanners, diff, fixers, reporters)
+│   ├── test_ai_engine.py            11 tests (AI engine, provider layer, secret fix)
+│   ├── test_stability.py            17 tests (paths, exclusions, safe fixes, providers)
+│   └── test_review_fixes.py         12 tests (de-duplication, lossless fixing, import scan)
 │
 ├── docs/
 │   ├── OWASP_COVERAGE.md            A01–A10 coverage map
@@ -211,7 +214,6 @@ django-sentinel/
 │
 ├── .sentinel.yml                    project config (scanners, AI, CI, GitHub)
 ├── pyproject.toml                   packaging: name, version, entry points
-├── setup.py                         legacy pip compatibility
 ├── .gitignore                       excludes venv, backups, secrets, outputs
 ├── LICENSE                          MIT
 ├── README.md                        this file
@@ -547,8 +549,8 @@ python -m djangosentinel scan . --diff --base main --fix --ai
 ## Running Tests
 
 ```bash
-# All 50 tests
-python -m unittest discover tests -v
+# All 144 tests
+python -m pytest -q
 
 # By group
 python -m unittest tests.test_all.TestDjangoScanner -v        # 18 tests
@@ -569,7 +571,7 @@ The included workflow has four jobs:
 | Job | Trigger | Does |
 |-----|---------|------|
 | `security-scan` | every push/PR | SARIF upload, PR comment, inline, check run |
-| `test` | every push/PR | 50 unit tests on Python 3.8–3.12 |
+| `test` | every push/PR | 144 unit tests on Python 3.8–3.12 |
 | `ai-deep-scan` | main branch only | Full AI deep scan, artifact upload |
 | `dependency-check` | every push/PR | CVE report artifact |
 

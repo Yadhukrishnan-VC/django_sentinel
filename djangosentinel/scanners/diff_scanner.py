@@ -31,13 +31,12 @@ Supports:
 
 import re
 import subprocess
-import io
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Dict, Optional, Tuple, Set
+from typing import List, Dict, Optional, Set
 
 from djangosentinel.models import (
-    Vulnerability, VulnCategory, Severity, CodeLocation, ScanResult
+    Vulnerability
 )
 
 
@@ -334,7 +333,6 @@ class DiffScanner:
         Returns only findings on changed lines.
         """
         from djangosentinel.scanners.django_scanner import DjangoScanner
-        from djangosentinel.scanners.ast_scanner import ASTScanner
         from djangosentinel.scanners.business_logic_scanner import BusinessLogicScanner
         from djangosentinel.scanners.dependency_scanner import DependencyScanner
 
@@ -382,7 +380,6 @@ class DiffScanner:
 
             # AST scanner
             if not self.skip_ast and diff_file.path.endswith(".py"):
-                ast_scanner = ASTScanner(str(self.project_path))
                 try:
                     import ast
                     tree = ast.parse(source)
@@ -471,5 +468,4 @@ class DiffScanner:
 # ─────────────────────────────────────────────────────────────────────────────
 # Import guard for DependencyScanner (used inside DiffScanner)
 # ─────────────────────────────────────────────────────────────────────────────
-from djangosentinel.scanners.dependency_scanner import DependencyScanner
 from typing import Dict

@@ -19,9 +19,9 @@ import os
 import re
 import urllib.request
 import urllib.error
-from typing import Optional, List, Dict, Any
+from typing import Optional, List
 
-from djangosentinel.models import ScanResult, Vulnerability, Severity
+from djangosentinel.models import ScanResult, Severity
 
 
 GITHUB_API = "https://api.github.com"
@@ -247,14 +247,14 @@ class GitHubPRIntegration:
             conclusion = "action_required"
 
         title = (
-            f"✅ No vulnerabilities found"
+            "✅ No vulnerabilities found"
             if total == 0
             else f"Found {total} issues (Critical: {critical}, High: {high})"
         )
 
         summary_lines = [
-            f"| Severity | Count |",
-            f"|----------|-------|",
+            "| Severity | Count |",
+            "|----------|-------|",
             f"| 🔴 Critical | {critical} |",
             f"| 🟠 High | {high} |",
             f"| 🟡 Medium | {s['by_severity']['medium']} |",

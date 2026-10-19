@@ -4,9 +4,7 @@ Installs a pre-commit hook that runs DjangoSentinel before every git push.
 Blocks commits/pushes containing CRITICAL vulnerabilities.
 """
 
-import os
 import stat
-import subprocess
 from pathlib import Path
 
 

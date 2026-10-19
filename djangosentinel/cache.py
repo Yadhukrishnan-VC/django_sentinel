@@ -22,11 +22,9 @@ The cache is conservative:
 
 import hashlib
 import json
-import os
-import time
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional
 import uuid
 
 from djangosentinel.models import (

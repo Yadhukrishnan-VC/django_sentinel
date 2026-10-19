@@ -7,9 +7,8 @@ import json
 import html
 from datetime import datetime
 from typing import List
-from pathlib import Path
 
-from djangosentinel.models import ScanResult, Vulnerability, Severity, VulnCategory
+from djangosentinel.models import ScanResult, Vulnerability, Severity
 
 
 # ANSI color codes

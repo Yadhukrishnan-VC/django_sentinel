@@ -25,15 +25,12 @@ Indentation rules:
 """
 
 import ast
-import re
 import shutil
-import textwrap
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Tuple, Dict
-import uuid
 
-from djangosentinel.models import Vulnerability, Fix
+from djangosentinel.models import Vulnerability
 
 
 class IndentationError(Exception):
@@ -117,7 +114,17 @@ class ASTSafeFixer:
             return False
 
         try:
-            source = file_path.read_text(encoding="utf-8", errors="ignore")
+            # Read raw bytes so nothing is lost or silently changed:
+            #  * a file that is not valid UTF-8 is never rewritten (decoding with
+            #    errors="ignore" and writing back would delete the unreadable bytes)
+            #  * the file's own line-ending style (LF / CRLF) is kept, so a fix
+            #    does not turn every line of the file into a diff.
+            try:
+                original_text = file_path.read_bytes().decode("utf-8")
+            except UnicodeDecodeError:
+                return False
+            newline = "\r\n" if "\r\n" in original_text else "\n"
+            source = original_text.replace("\r\n", "\n")
 
             # Ensure source is valid Python before we touch it
             if file_path.suffix == ".py":
@@ -141,7 +148,8 @@ class ASTSafeFixer:
             if not self.dry_run:
                 if self.backup:
                     self._backup(file_path)
-                file_path.write_text(new_source, encoding="utf-8")
+                out_text = new_source.replace("\n", newline) if newline != "\n" else new_source
+                file_path.write_bytes(out_text.encode("utf-8"))
 
             vuln.fix.applied = True
             return True
@@ -191,7 +199,6 @@ class ASTSafeFixer:
             return None
 
         target_line = lines[target_line_idx]
-        target_indent = detect_indent(target_line)
 
         # Stage 1: Simple in-line replacement (single line, no structural change)
         if fix.original_code and "\n" not in fix.original_code and "\n" not in fix.fixed_code:
@@ -205,7 +212,6 @@ class ASTSafeFixer:
             # Find the exact location of original_code in source
             # and replace it with correctly-indented fixed_code
             orig_lines = fix.original_code.splitlines()
-            fixed_lines_raw = fix.fixed_code.splitlines()
 
             # Find where original starts (closest to target line)
             best_start = None

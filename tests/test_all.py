@@ -16,7 +16,6 @@ TestAutoFixer              — 3 tests  (simple fixes via ASTSafeFixer)
 TestReporters              — 5 tests  (terminal, JSON, diff output)
 """
 
-import os
 import sys
 import ast
 import json
@@ -34,12 +33,12 @@ from djangosentinel.models import (
 from djangosentinel.scanners import (
     DjangoScanner, BusinessLogicScanner, DependencyScanner, ASTScanner
 )
-from djangosentinel.scanners.diff_scanner import DiffParser, DiffScanner, GitDiffSource
+from djangosentinel.scanners.diff_scanner import DiffParser, DiffScanner
 from djangosentinel.fixers import AutoFixer, ASTSafeFixer
 from djangosentinel.reporters import TerminalReporter, JSONReporter, DiffReporter
 from djangosentinel.analysis import (
     DataFlowTracker, apply_confidence_scores, deduplicate,
-    filter_by_confidence, score_label, finding_hash,
+    score_label, finding_hash,
 )
 from djangosentinel.cache import ScanCache, file_hash
 

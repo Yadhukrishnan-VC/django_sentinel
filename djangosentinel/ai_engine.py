@@ -19,11 +19,9 @@ LLM handles:
 """
 
 import json
-import os
 import re
-import time
 from pathlib import Path
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Optional, List, Dict
 
 from djangosentinel.models import (
     Vulnerability, VulnCategory, Severity, CodeLocation, Fix, ScanResult
@@ -96,7 +94,6 @@ race conditions, authentication patterns, and common Django anti-patterns."""
         self,
         vuln: Vulnerability,
         file_context: str = "",
-        surrounding_lines: int = 10,
     ) -> Optional[Fix]:
         """
         Generate an AI-powered fix for a vulnerability that needs multi-line
@@ -512,114 +509,3 @@ Write a PR review comment. Include:
 
         lines.append(f"\n---\n*DjangoSentinel v1.0.0 — {s['files_scanned']} files · {s['duration_seconds']:.1f}s*")
         return "\n".join(lines)
-
-    def post_to_github(
-        self,
-        comment: str,
-        repo: str,
-        pr_number: int,
-        token: str,
-    ) -> bool:
-        """
-        Post the review comment to a GitHub PR via the REST API.
-
-        Args:
-            comment: Markdown comment text
-            repo:    'owner/repo' format
-            pr_number: Pull request number
-            token:   GitHub personal access token or GITHUB_TOKEN
-
-        Returns:
-            True if posted successfully, False otherwise
-        """
-        try:
-            import urllib.request
-            import urllib.error
-
-            url = f"https://api.github.com/repos/{repo}/issues/{pr_number}/comments"
-            payload = json.dumps({"body": comment}).encode("utf-8")
-
-            req = urllib.request.Request(
-                url,
-                data=payload,
-                headers={
-                    "Authorization": f"Bearer {token}",
-                    "Accept": "application/vnd.github+json",
-                    "Content-Type": "application/json",
-                    "X-GitHub-Api-Version": "2022-11-28",
-                },
-                method="POST",
-            )
-
-            with urllib.request.urlopen(req, timeout=15) as resp:
-                return resp.status in (200, 201)
-
-        except Exception:
-            return False
-
-    def post_inline_annotations(
-        self,
-        result: ScanResult,
-        repo: str,
-        pr_number: int,
-        commit_sha: str,
-        token: str,
-    ) -> int:
-        """
-        Post inline code annotations on specific lines of the PR diff.
-        Returns number of annotations successfully posted.
-        """
-        try:
-            import urllib.request
-
-            url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}/reviews"
-            comments = []
-
-            for v in result.vulnerabilities:
-                if v.fix and v.fix.applied:
-                    continue
-                body = f"**🛡️ {v.severity.value}: {v.title}**\n\n{v.description}"
-                if v.fix and v.fix.explanation:
-                    body += f"\n\n**Fix:** {v.fix.explanation}"
-                if v.cwe_id:
-                    body += f"\n\n*{v.cwe_id} · {v.owasp_ref}*"
-
-                comments.append({
-                    "path": v.location.file_path,
-                    "line": v.location.line_number,
-                    "side": "RIGHT",
-                    "body": body,
-                })
-
-            if not comments:
-                return 0
-
-            severity_counts = result.summary()["by_severity"]
-            event = "REQUEST_CHANGES" if severity_counts["critical"] > 0 else "COMMENT"
-
-            payload = json.dumps({
-                "commit_id": commit_sha,
-                "body": f"DjangoSentinel found {len(result.vulnerabilities)} security issue(s).",
-                "event": event,
-                "comments": comments[:50],  # GitHub limits to 50 inline comments per review
-            }).encode("utf-8")
-
-            req = urllib.request.Request(
-                url,
-                data=payload,
-                headers={
-                    "Authorization": f"Bearer {token}",
-                    "Accept": "application/vnd.github+json",
-                    "Content-Type": "application/json",
-                    "X-GitHub-Api-Version": "2022-11-28",
-                },
-                method="POST",
-            )
-
-            with urllib.request.urlopen(req, timeout=15) as resp:
-                if resp.status in (200, 201):
-                    return len(comments)
-                return 0
-
-        except Exception:
-            return 0

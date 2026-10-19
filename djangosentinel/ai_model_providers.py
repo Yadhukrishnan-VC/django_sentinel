@@ -16,8 +16,8 @@ Environment variables:
 
 import os
 import json
-import urllib.request
 import urllib.error
+import urllib.request
 from abc import ABC, abstractmethod
 from typing import Optional
 
@@ -32,12 +32,10 @@ class AIModelProvider(ABC):
     @abstractmethod
     def _get_api_key(self) -> str:
         """Retrieve the API key from environment / configuration."""
-        pass
 
     @abstractmethod
     def _call_api(self, system: str, user: str, max_tokens: int, timeout: int) -> Optional[str]:
         """Make the API call and return the response text, or None on failure."""
-        pass
 
     def generate(self, system: str, user: str, max_tokens: int = 1500, timeout: int = 30) -> Optional[str]:
         """Public entry point: return None if unavailable, else API result."""

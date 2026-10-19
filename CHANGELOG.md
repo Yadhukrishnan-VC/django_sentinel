@@ -16,9 +16,22 @@
 - The CLI no longer crashes with `UnicodeEncodeError` on consoles that cannot encode emoji (for example Windows `cp1252`).
 - Docker: the image is built from the local source (not from PyPI), has `production` and `development` targets, no restart loop, and a `.dockerignore`.
 
+- De-duplication hid real findings: findings were merged when they fell in the same 3-line bucket, so three separate `eval()` calls on consecutive lines were reported as two. Findings are now merged only when different scanners report the same line or an adjacent line; separate problems from the same scanner are always kept.
+- Auto-fix could damage files: it read files with `errors="ignore"` and wrote them back (deleting any non-UTF-8 bytes) and normalised line endings (CRLF became LF on Linux/macOS, LF became CRLF on Windows). Files that are not valid UTF-8 are now left untouched and the original line endings are kept.
+- `finding_hash` now uses SHA-256 instead of MD5 (no FIPS/`usedforsecurity` problems on Python 3.8).
+
+### Performance
+- Scanning large projects is about 3.5x faster (3,000 files: 32 s to 9 s). The dangerous-import check compiled a regular expression for every package on every line of every file; patterns are now compiled once and files without such imports are skipped. The IDOR and taint analyses skip parsing files that cannot contain what they look for.
+
+### Removed
+- Duplicate `post_to_github()` and `post_inline_annotations()` in `ai_engine.py` (the GitHub integration lives in `github_integration.py`) and the unused `surrounding_lines` parameter of `AIFixEngine.generate_fix()`.
+- Generated and duplicate files from the repository: `report.html`, the built manual PDFs (rebuild with `python tools/build_manuals.py`), the empty `Pipfile` and the redundant `setup.py` (packaging is defined in `pyproject.toml`).
+- Dead code: unused imports and variables, the unused `_call_claude` alias and the demo block in `ai_model_providers.py`.
+
 ### Added
 - `tests/test_ai_engine.py`: regression tests for the AI engine (fake provider) and the secret auto-fix.
 - `tests/test_stability.py`: regression tests for the fixes above.
+- `tests/test_review_fixes.py`: regression tests for de-duplication, lossless fixing and the dangerous-import scan.
 
 
 

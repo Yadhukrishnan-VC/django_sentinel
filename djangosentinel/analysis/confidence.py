@@ -21,8 +21,7 @@ Deduplication:
 """
 
 import hashlib
-from typing import List, Dict, Optional, Set
-from dataclasses import dataclass
+from typing import List, Dict, Optional
 from djangosentinel.models import Vulnerability, Severity
 
 
@@ -162,7 +161,26 @@ def finding_hash(vuln: Vulnerability) -> str:
     cwe = vuln.cwe_id
 
     key = f"{file_path}:{line_bucket}:{category}:{cwe}"
-    return hashlib.md5(key.encode("utf-8")).hexdigest()[:12]
+    return hashlib.sha256(key.encode("utf-8")).hexdigest()[:12]
+
+
+def _same_issue(a: Vulnerability, b: Vulnerability) -> bool:
+    """
+    Decide whether two findings (already known to share file, category and CWE)
+    describe the same problem.
+
+    * Same line                       -> same issue.
+    * Neighbouring lines (+-1)        -> same issue only when different scanners
+      reported them (one scanner often reports the first line of a statement and
+      another the line of the call). Two findings from the SAME scanner on
+      different lines are different problems and are both kept.
+    """
+    delta = abs(a.location.line_number - b.location.line_number)
+    if delta == 0:
+        return True
+    if delta == 1:
+        return a.metadata.get("source", "") != b.metadata.get("source", "")
+    return False
 
 
 def deduplicate(vulnerabilities: List[Vulnerability]) -> List[Vulnerability]:
@@ -170,29 +188,48 @@ def deduplicate(vulnerabilities: List[Vulnerability]) -> List[Vulnerability]:
     Remove duplicate findings, keeping the highest-confidence version.
 
     When two scanners find the same issue at the same location, we:
-        1. Compute the hash for each finding
-        2. Group findings by hash
-        3. Keep the one with highest confidence
+        1. Group findings by file, category and CWE
+        2. Cluster findings in each group that describe the same issue
+        3. Keep the one with highest confidence from each cluster
         4. Merge metadata and references from duplicates into the winner
+
+    Distinct problems on neighbouring lines (for example three separate eval()
+    calls) are never merged.
     """
-    groups: Dict[str, List[Vulnerability]] = {}
+    groups: Dict[tuple, List[tuple]] = {}
+    for index, v in enumerate(vulnerabilities):
+        key = (v.location.file_path, v.category.value, v.cwe_id)
+        groups.setdefault(key, []).append((index, v))
 
-    for v in vulnerabilities:
-        h = finding_hash(v)
-        groups.setdefault(h, []).append(v)
+    clusters: List[List[tuple]] = []
+    for members in groups.values():
+        members.sort(key=lambda m: m[1].location.line_number)
+        group_clusters: List[List[tuple]] = []
+        for item in members:
+            for cluster in group_clusters:
+                if any(_same_issue(item[1], other[1]) for other in cluster):
+                    cluster.append(item)
+                    break
+            else:
+                group_clusters.append([item])
+        clusters.extend(group_clusters)
 
+    # Keep the original reporting order (by first appearance of each cluster)
+    clusters.sort(key=lambda c: min(i for i, _ in c))
+
+    severity_order = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"]
     result: List[Vulnerability] = []
-
-    for h, group in groups.items():
+    for cluster in clusters:
+        group = [v for _, v in sorted(cluster, key=lambda m: m[0])]
         if len(group) == 1:
             result.append(group[0])
             continue
 
-        # Keep highest confidence; fall back to lowest severity (most conservative)
+        # Keep highest confidence; fall back to the most severe finding
         group.sort(
             key=lambda v: (
                 -v.metadata.get("confidence", 0.5),
-                ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"].index(v.severity.value),
+                severity_order.index(v.severity.value),
             )
         )
         winner = group[0]

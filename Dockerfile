@@ -18,7 +18,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /opt/sentinel
-COPY pyproject.toml setup.py README.md LICENSE ./
+COPY pyproject.toml README.md LICENSE ./
 COPY djangosentinel ./djangosentinel
 
 
