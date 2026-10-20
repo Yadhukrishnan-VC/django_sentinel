@@ -2,6 +2,7 @@
 Core data models for vulnerability representation.
 """
 
+import os
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional, List, Dict, Any
@@ -31,7 +32,7 @@ class VulnCategory(Enum):
     OPEN_REDIRECT = "Open Redirect"
     RACE_CONDITION = "Race Condition"
     MASS_ASSIGNMENT = "Mass Assignment"
-    HARDCODED_SECRET = "Hardcoded Secret/Credential"
+    HARDCODED_SECRET = os.environ.get("HARDCODED_SECRET", "")
 
 
 @dataclass

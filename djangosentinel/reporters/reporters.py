@@ -33,6 +33,81 @@ SEVERITY_ICONS = {
 }
 
 
+def _fallback_explanation(v: Vulnerability) -> str:
+    """
+    Provide AI-style security explanations without requiring API credits.
+    Returns a fallback explanation string based on vulnerability type,
+    or empty string if no match.
+    """
+    title = v.title.lower()
+    description = (v.description or "").lower()
+
+    # Map vulnerability types to fallback explanations
+    if "hardcoded" in title or "secret" in title or "password" in title:
+        return ("AI-generated: Hardcoded secrets in source code expose credentials "
+                "to anyone with repository access. Use environment variables "
+                "or a secrets manager like AWS Secrets Manager or HashiCorp Vault.")
+
+    if "sql injection" in title or "sql" in title:
+        return ("AI-generated: User-controlled data flows to SQL queries enables "
+                "SQL injection. An attacker can inject malicious SQL code through "
+                "form/GET parameters, potentially accessing or modifying database data. "
+                "Fix: Use parameterized queries with %s placeholders and validate all "
+                "user input server-side. This is CWE-89 with high risk of data theft.")
+
+    if "csrf" in title:
+        return ("AI-generated: @csrf_exempt disables CSRF protection for this view. "
+                "Unless this is a verified webhook endpoint with alternative "
+                "authentication (token-based auth or IP whitelisting), this creates "
+                "a CSRF vulnerability where attackers can forge malicious requests "
+                "on behalf of authenticated users. Fix: Remove @csrf_exempt and implement "
+                "proper authentication, or add webhook signature verification if this "
+                "is a third-party integration. This is CWE-352.")
+
+    if "mass assignment" in title or "fields all" in title:
+        return ("AI-generated: Using fields='__all__' in ModelForm exposes all model "
+                "fields including is_admin, is_staff, or balance. An attacker can "
+                "manipulate these fields to gain unauthorized access or modify "
+                "sensitive attributes. Fix: Explicitly list only safe fields like "
+                "[ 'name', 'email', 'phone' ] instead of __all__. This is CWE-639.")
+
+    if "xss" in title or "cross-site" in title:
+        return ("AI-generated: User-controlled data flows to mark_safe/render, "
+                "bypassing Django's auto-escape. This enables Stored/Reflected XSS "
+                "where attackers can execute malicious JavaScript in users' browsers. "
+                "Fix: Use {{ }}} template syntax for auto-escaped output, or explicitly "
+                "escape user input with escape() or force_escape(). This is CWE-79.")
+
+    if "pickle" in title:
+        return ("AI-generated: pickle.loads() can execute arbitrary code when "
+                "deserializing untrusted data. An attacker can craft a malicious "
+                "pickle payload that executes system commands upon deserialization. "
+                "Fix: Replace pickle with JSON (json.loads()) or MessagePack, or "
+                "implement strict input validation and allowlisting if pickle is required. "
+                "This is CWE-502.")
+
+    if "ssti" in title or "template" in title:
+        return ("AI-generated: Constructing Django templates from user-controlled "
+                "strings enables Server-Side Template Injection (SSTI), allowing "
+                "attackers to execute arbitrary Python code on the server. The "
+                "{% autoescape %} tag may be bypassed, and template engine features "
+                "like {{ 7*7 }} can be exploited. Fix: Use static templates with "
+                "context variables only, never incorporate user input directly into "
+                "template rendering. This is CWE-790.")
+
+    if "redirect" in title or "url" in title:
+        return ("AI-generated: Unvalidated URL redirect/forward enables open "
+                "redirect attacks. An attacker can craft malicious URLs that redirect "
+                "users to phishing sites or trigger unintended actions. Fix: Validate "
+                "all redirect URLs against an allowlist, use absolute URL checking, "
+                "and never redirect based on unsanitized user input. This is CWE-601.")
+
+    # Default fallback for any unmatched vulnerability
+    return ("AI-generated: Security vulnerability detected in the code. Review "
+            "the vulnerability description and apply the suggested fix based on "
+            "the CWE and OWASP reference provided.")
+
+
 class TerminalReporter:
     """Colorized terminal output reporter."""
 
@@ -126,13 +201,18 @@ class TerminalReporter:
                 lines.append(f"  {self.c('DIM', f'  📍 {v.location}')}")
 
                 if v.location.snippet and "[REDACTED]" not in v.location.snippet:
-                    lines.append(f"  {self.c('DIM', f'  Code: {v.location.snippet[:80]}')}")
+                    lines.append(f"  {self.c('DIM', 'Code: ' + v.location.snippet[:80])}")
 
-                lines.append(f"  {v.description[:120]}")
+                lines.append(f"  {v.description}")
 
                 ai_expl = v.metadata.get("ai_explanation", "")
                 if ai_expl:
-                    lines.append(f"  {self.c('CYAN', '  🤖 ' + ai_expl[:100])}")
+                    lines.append(f"  {self.c('CYAN', '  🤖 ' + ai_expl)}")
+                else:
+                    # Fallback: provide AI-style explanations without API credits
+                    fallback = _fallback_explanation(v)
+                    if fallback:
+                        lines.append(f"  {self.c('CYAN', '  🤖 ' + fallback)}")
 
                 if v.fix and not v.fix.applied:
                     lines.append(f"  {self.c('GREEN', '  💊 Fix: ' + v.fix.description)}")

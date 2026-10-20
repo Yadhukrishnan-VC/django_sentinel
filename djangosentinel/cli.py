@@ -21,6 +21,8 @@ import uuid
 import time
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 from djangosentinel.models import ScanResult, Severity
 from djangosentinel.scanners import (
     DjangoScanner, BusinessLogicScanner, DependencyScanner, ASTScanner,
@@ -70,7 +72,7 @@ def _step(icon: str, text: str, no_color: bool = False):
 def _header(no_color: bool = False):
     banner = (
         "\n  ╔══════════════════════════════════════════════════╗\n"
-        "  ║       🛡️  DJANGOSENTINEL  v1.0.0                 ║\n"
+        "  ║       🛡️  DJANGOSENTINEL  v1.0.0                  ║\n"
         "  ║       Enterprise AI Security Scanner             ║\n"
         "  ╚══════════════════════════════════════════════════╝"
     )
@@ -358,7 +360,7 @@ def run_diff_scan(args) -> tuple:
     if ai_explainer and ai_explainer.available and getattr(args, "ai_explain", False):
         if is_terminal:
             _step("💬", "Generating AI explanations...", no_color)
-        for v in all_vulns[:15]:
+        for v in all_vulns:
             try:
                 expl = ai_explainer.explain(v)
                 if expl:
@@ -534,7 +536,7 @@ def run_full_scan(args) -> ScanResult:
     if ai_explainer and ai_explainer.available and getattr(args, "ai_explain", False):
         if is_terminal:
             _step("💬", "Generating AI explanations...", no_color)
-        for v in all_vulns[:20]:
+        for v in all_vulns:
             try:
                 expl = ai_explainer.explain(v)
                 if expl:
@@ -863,6 +865,7 @@ def _make_console_safe():
 
 def main():
     _make_console_safe()
+    load_dotenv()
     parser = build_parser()
     args = parser.parse_args()
 

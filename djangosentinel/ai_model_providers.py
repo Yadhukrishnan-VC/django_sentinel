@@ -20,7 +20,7 @@ import urllib.error
 import urllib.request
 from abc import ABC, abstractmethod
 from typing import Optional
-
+import time
 
 class AIModelProvider(ABC):
     """Abstract base for AI model providers."""
@@ -129,34 +129,66 @@ class GeminiProvider(AIModelProvider):
     """Google Gemini model provider (Generative Language REST API)."""
 
     DEFAULT_MODEL = "gemini-2.5-flash"
+    FALLBACK_MODELS = ["gemini-2.5-flash-lite"]
+    MAX_RETRIES = 1
 
     def _get_api_key(self) -> str:
         return os.environ.get("GOOGLE_API_KEY", "")
 
     def _call_api(self, system: str, user: str, max_tokens: int, timeout: int) -> Optional[str]:
+        """Make API call with one retry for transient errors (503 rate limiting)."""
         try:
             model = os.environ.get("GEMINI_MODEL", self.DEFAULT_MODEL)
-            body = {
-                "contents": [{"role": "user", "parts": [{"text": user}]}],
-                "generationConfig": {"maxOutputTokens": max_tokens, "temperature": 0.0},
-            }
-            if system.strip():
-                body["systemInstruction"] = {"parts": [{"text": system}]}
 
-            req = urllib.request.Request(
-                f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-                data=json.dumps(body).encode("utf-8"),
-                headers={
-                    "Content-Type": "application/json",
-                    # key in a header (not the URL) so it never appears in logs
-                    "x-goog-api-key": self.api_key,
-                },
-                method="POST",
-            )
+            # Try requested model, then fallback models
+            models_to_try = [model] + self.FALLBACK_MODELS
 
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-                return data["candidates"][0]["content"]["parts"][0]["text"]
+            for try_model in models_to_try:
+                for attempt in range(self.MAX_RETRIES + 1):
+                    body = {
+                        "contents": [{"role": "user", "parts": [{"text": user}]}],
+                        "generationConfig": {"maxOutputTokens": max_tokens, "temperature": 0.0},
+                    }
+                    if system.strip():
+                        body["systemInstruction"] = {"parts": [{"text": system}]}
+
+                    req = urllib.request.Request(
+                        f"https://generativelanguage.googleapis.com/v1beta/models/{try_model}:generateContent",
+                        data=json.dumps(body).encode("utf-8"),
+                        headers={
+                            "Content-Type": "application/json",
+                            "x-goog-api-key": self.api_key,
+                        },
+                        method="POST",
+                    )
+
+                    try:
+                        with urllib.request.urlopen(req, timeout=timeout) as resp:
+                            data = json.loads(resp.read().decode("utf-8"))
+                            return data["candidates"][0]["content"]["parts"][0]["text"]
+                    except urllib.error.HTTPError as e:
+                        # Transient 503: retry once with short delay
+                        if e.code == 503 and attempt < self.MAX_RETRIES:
+                            time.sleep(2)
+                            continue
+                        # 404 model not found: try next model
+                        if e.code == 404:
+                            break
+                        # Other HTTP error: stop trying this model
+                        return None
+                    except Exception:
+                        # Network error: retry once
+                        if attempt < self.MAX_RETRIES:
+                            time.sleep(1)
+                            continue
+                        return None
+
+                # Move to next model in the list
+                continue
+
+            # All models exhausted
+            return None
+
         except Exception:
             return None
 

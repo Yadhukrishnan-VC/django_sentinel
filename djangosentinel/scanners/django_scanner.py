@@ -471,7 +471,7 @@ class DjangoScanner:
                     cwe_id="CWE-552",
                     fix=Fix(
                         description="Specify upload_to directory",
-                        original_code="FileField()",
+                        original_code="FileField(upload_to='uploads/%Y/%m/%d/')",
                         fixed_code="FileField(upload_to='uploads/%Y/%m/%d/')",
                         explanation="Use upload_to to organize and control file storage paths.",
                     ),
