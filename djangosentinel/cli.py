@@ -667,7 +667,7 @@ def cmd_scan(args):
             output = reporter.report(result)
     else:
         if fmt == "terminal":
-            output = TerminalReporter(no_color=no_color).report(result)
+            output = TerminalReporter(no_color=no_color, ai_explain=getattr(args, "ai_explain", False)).report(result)
         elif fmt == "json":
             output = JSONReporter().report(result)
         elif fmt == "html":
@@ -675,7 +675,7 @@ def cmd_scan(args):
         elif fmt == "sarif":
             output = SARIFReporter().report(result)
         else:
-            output = TerminalReporter(no_color=no_color).report(result)
+            output = TerminalReporter(no_color=no_color, ai_explain=getattr(args, "ai_explain", False)).report(result)
 
     # ── Write / print ─────────────────────────────────────────────────────────
     if args.output:

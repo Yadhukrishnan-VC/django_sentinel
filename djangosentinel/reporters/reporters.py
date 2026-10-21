@@ -111,8 +111,9 @@ def _fallback_explanation(v: Vulnerability) -> str:
 class TerminalReporter:
     """Colorized terminal output reporter."""
 
-    def __init__(self, no_color: bool = False):
+    def __init__(self, no_color: bool = False, ai_explain: bool = False):
         self.no_color = no_color
+        self._ai_explain_requested = ai_explain
 
     def c(self, color: str, text: str) -> str:
         if self.no_color:
@@ -208,8 +209,9 @@ class TerminalReporter:
                 ai_expl = v.metadata.get("ai_explanation", "")
                 if ai_expl:
                     lines.append(f"  {self.c('CYAN', '  🤖 ' + ai_expl)}")
-                else:
+                elif self._ai_explain_requested:
                     # Fallback: provide AI-style explanations without API credits
+                    # only when --ai-explain was explicitly requested
                     fallback = _fallback_explanation(v)
                     if fallback:
                         lines.append(f"  {self.c('CYAN', '  🤖 ' + fallback)}")
